@@ -375,13 +375,19 @@ function initEvents() {
   });
 
   DOM.resetBtn.addEventListener('click', async () => {
-    if (!confirm('Do you want to reset your score back to 0?')) return;
+    DOM.resetBtn.disabled = true;
     const res = await api('/api/game/reset', { method: 'POST' });
-    if (res.ok) {
+    DOM.resetBtn.disabled = false;
+
+    if (res.ok && res.data.success) {
       state.user = res.data.user;
+      selectDigit(null);
+      hideResultBanner();
       updateHUD(state.user);
-      showToast('Score has been reset.', 'info');
+      showToast('Score has been reset to 0.', 'info');
       loadNewPuzzle();
+    } else {
+      showToast(res.data.error || 'Failed to reset score.', 'error');
     }
   });
 
