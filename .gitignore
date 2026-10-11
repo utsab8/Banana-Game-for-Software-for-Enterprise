@@ -1,0 +1,33 @@
+# ==============================================================================
+# CIS046-3 Software For Enterprise — .gitignore
+# Purpose: Quarantines runtime dependencies, OS metadata, environment secrets,
+#          and debug logs to maintain repository cleanliness and integrity.
+# ==============================================================================
+
+# Node.js dependencies (Quarantined from version control)
+node_modules/
+package-lock.json
+
+# Environment variables & secrets
+.env
+.env.local
+.env.development
+.env.production
+
+# Debug and runtime logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Operating System metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE and Editor configurations
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
