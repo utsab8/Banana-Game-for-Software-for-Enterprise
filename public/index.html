@@ -3,257 +3,251 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="CIS046-3 Software For Enterprise — Banana Challenge Enterprise System demonstrating Version Control, Event-Driven Programming, Interoperability, and Virtual Identity.">
-  <meta name="author" content="Utsab">
-  <title>Enterprise Banana Challenge | CIS046-3</title>
+  <title>Banana Math Game - CIS046-3 Enterprise Assignment</title>
   
-  <!-- Modern Google Fonts: Outfit (Display) & Inter (UI/Body) -->
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍌</text></svg>">
+  
+  <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Styles -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Background Ambient Glow Accents -->
-  <div class="ambient-glow glow-top-left" aria-hidden="true"></div>
-  <div class="ambient-glow glow-bottom-right" aria-hidden="true"></div>
 
-  <div class="app-layout">
-    <!-- Top Enterprise Navigation Header -->
-    <header class="app-header" role="banner">
-      <div class="brand-container">
-        <div class="brand-logo" aria-hidden="true">🍌</div>
-        <div class="brand-text">
-          <h1 class="brand-title">Banana Challenge</h1>
-          <span class="brand-badge">CIS046-3 Enterprise Edition</span>
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <span class="brand-icon"><i class="fa-solid fa-puzzle-piece"></i></span>
+        <div>
+          <h1 class="brand-name">Banana Math Game</h1>
+          <span class="brand-course">CIS046-3: Software for Enterprise</span>
         </div>
       </div>
 
-      <div class="header-controls">
-        <div id="session-badge" class="session-badge badge-guest" aria-live="polite">
-          <span class="status-dot"></span>
-          <span id="session-status-text">Guest Mode</span>
+      <div class="nav-actions">
+        <div id="session-badge" class="session-pill guest">
+          <i class="fa-solid fa-circle-user"></i>
+          <span id="session-status-text">Not Logged In</span>
         </div>
-        <button id="logout-btn" class="btn btn-outline btn-sm hidden" aria-label="Terminate current session and log out">
-          <span class="btn-icon">🚪</span> Log Out
+        <button id="logout-btn" class="btn btn-sm btn-outline hidden">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
         </button>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <!-- Main Content Area -->
-    <main class="app-main" role="main">
-      <!-- ================================================================ -->
-      <!-- VIEW 1: VIRTUAL IDENTITY LOGIN PORTAL (Tier 4 demonstration)      -->
-      <!-- ================================================================ -->
-      <section id="auth-section" class="auth-section" aria-labelledby="auth-heading">
-        <div class="glass-card auth-card">
-          <div class="auth-icon" aria-hidden="true">🔐</div>
-          <h2 id="auth-heading" class="auth-title">Virtual Identity Portal</h2>
-          <p class="auth-subtitle">
-            Enter your player handle to establish a secure, stateful session cookie over stateless HTTP.
-          </p>
-
-          <form id="login-form" class="auth-form" novalidate>
-            <div class="form-group">
-              <label for="username-input" class="form-label">Player Nickname</label>
-              <div class="input-wrapper">
-                <span class="input-icon" aria-hidden="true">👤</span>
-                <input 
-                  type="text" 
-                  id="username-input" 
-                  name="username"
-                  class="form-input" 
-                  placeholder="e.g. EnterpriseCoder" 
-                  maxlength="25" 
-                  required 
-                  autofocus 
-                  autocomplete="username"
-                />
-              </div>
-              <span id="username-error" class="input-error-msg hidden" role="alert"></span>
-            </div>
-
-            <button type="submit" id="login-btn" class="btn btn-primary btn-block">
-              <span>Start Challenge Arena</span>
-              <span class="btn-arrow" aria-hidden="true">→</span>
-            </button>
-          </form>
-
-          <div class="auth-architecture-note">
-            <div class="note-pill">
-              <span class="pill-dot"></span> 3-Tier Enterprise Boundary
-            </div>
-            <p>
-              Your virtual identity is stored server-side via <code>express-session</code> and secured with an encrypted HTTP-only cookie.
-            </p>
+  <!-- Main Container -->
+  <main class="main-container">
+    
+    <!-- 1. Login View -->
+    <section id="auth-section" class="view-panel">
+      <div class="card login-card">
+        <div class="card-header">
+          <div class="login-avatar">
+            <i class="fa-solid fa-user-lock"></i>
           </div>
+          <h2>Player Login</h2>
+          <p class="subtitle">Enter your name or nickname to start playing. Your score and session will be saved automatically.</p>
         </div>
-      </section>
 
-      <!-- ================================================================ -->
-      <!-- VIEW 2: GAME ARENA DASHBOARD (Tiers 1, 2, and 3 integration)      -->
-      <!-- ================================================================ -->
-      <section id="game-section" class="game-section hidden" aria-labelledby="arena-heading">
-        <h2 id="arena-heading" class="sr-only">Interactive Puzzle Arena</h2>
-
-        <!-- Telemetry HUD Bar -->
-        <section class="telemetry-hud" aria-label="Player Statistics HUD">
-          <div class="hud-item player-hud-card">
-            <span class="hud-label">Player</span>
-            <div class="hud-value-group">
-              <span class="hud-avatar">👤</span>
-              <span id="hud-player-name" class="hud-value highlight-player">Player</span>
+        <form id="login-form" class="login-form">
+          <div class="input-group">
+            <label for="username-input">Enter Username</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-user"></i>
+              <input 
+                type="text" 
+                id="username-input" 
+                placeholder="e.g. JohnSmith" 
+                maxlength="25"
+                required
+                autocomplete="off"
+              >
             </div>
+            <span id="username-error" class="error-msg hidden"></span>
           </div>
 
-          <div class="hud-item">
-            <span class="hud-label">Score</span>
-            <span id="hud-score" class="hud-value highlight-gold">0</span>
-          </div>
+          <button type="submit" id="login-btn" class="btn btn-primary btn-block">
+            <i class="fa-solid fa-right-to-bracket"></i> Start Game
+          </button>
+        </form>
 
-          <div class="hud-item">
-            <span class="hud-label">Streak</span>
-            <div class="hud-value-group">
-              <span id="hud-streak-icon" class="streak-icon">⚡</span>
-              <span id="hud-streak" class="hud-value">0x</span>
-            </div>
-          </div>
-
-          <div class="hud-item">
-            <span class="hud-label">High Score</span>
-            <span id="hud-high-score" class="hud-value highlight-emerald">0</span>
-          </div>
-
-          <div class="hud-item">
-            <span class="hud-label">Rounds</span>
-            <span id="hud-rounds" class="hud-value">0</span>
-          </div>
-        </section>
-
-        <!-- Main Game Stage Grid (Puzzle + Keypad) -->
-        <div class="game-grid">
-          <!-- Puzzle Presentation Canvas -->
-          <article id="puzzle-card" class="glass-card puzzle-card" aria-label="Current Mathematical Puzzle">
-            <div class="puzzle-header">
-              <div class="puzzle-tag">
-                <span class="tag-icon">🧩</span>
-                <span id="puzzle-source-tag">Live Banana API (Tier 3)</span>
-              </div>
-              <div id="fallback-indicator" class="fallback-indicator hidden" title="Upstream API fallback engaged">
-                <span class="fallback-dot"></span> Offline Fallback
-              </div>
-            </div>
-
-            <!-- Puzzle Image Canvas Container -->
-            <div class="puzzle-canvas-wrapper">
-              <!-- Loading Skeleton State -->
-              <div id="puzzle-loader" class="puzzle-skeleton" aria-label="Loading puzzle image">
-                <div class="skeleton-shimmer"></div>
-                <div class="skeleton-text">
-                  <span class="spinner"></span>
-                  <span>Fetching puzzle from Tier 3...</span>
-                </div>
-              </div>
-
-              <!-- Live Puzzle Image -->
-              <img 
-                id="puzzle-img" 
-                class="puzzle-img hidden" 
-                src="" 
-                alt="Algebraic banana mathematical puzzle image" 
-              />
-            </div>
-
-            <!-- Feedback Banner -->
-            <div id="feedback-banner" class="feedback-banner hidden" role="status" aria-live="polite">
-              <span id="feedback-icon" class="feedback-icon"></span>
-              <span id="feedback-text" class="feedback-text"></span>
-            </div>
-          </article>
-
-          <!-- Interactive Control Console (0-9 Keypad & Actions) -->
-          <aside class="glass-card control-console" aria-label="Interactive Answer Pad">
-            <div class="console-header">
-              <h3 class="console-title">Select Your Answer</h3>
-              <p class="console-desc">Solve the algebraic matrix and enter the missing number (0–9).</p>
-            </div>
-
-            <!-- Active Answer Display Screen -->
-            <div class="answer-preview-screen" aria-live="polite">
-              <span class="preview-label">Your Deduction:</span>
-              <div id="current-answer-box" class="answer-digit-box" aria-label="Currently selected answer digit">
-                <span id="answer-placeholder" class="placeholder-text">?</span>
-                <span id="answer-value" class="value-text hidden"></span>
-              </div>
-            </div>
-
-            <!-- 0–9 Numeric Virtual Keypad Grid -->
-            <div id="keypad-grid" class="keypad-grid" role="group" aria-label="Numeric input keypad">
-              <button type="button" class="btn-key" data-digit="1">1</button>
-              <button type="button" class="btn-key" data-digit="2">2</button>
-              <button type="button" class="btn-key" data-digit="3">3</button>
-              <button type="button" class="btn-key" data-digit="4">4</button>
-              <button type="button" class="btn-key" data-digit="5">5</button>
-              <button type="button" class="btn-key" data-digit="6">6</button>
-              <button type="button" class="btn-key" data-digit="7">7</button>
-              <button type="button" class="btn-key" data-digit="8">8</button>
-              <button type="button" class="btn-key" data-digit="9">9</button>
-              <button type="button" class="btn-key btn-key-zero" data-digit="0">0</button>
-            </div>
-
-            <!-- Primary Action Console Buttons -->
-            <div class="action-btn-group">
-              <button type="button" id="submit-btn" class="btn btn-primary btn-action" disabled>
-                <span class="btn-icon">✓</span> Submit Answer
-              </button>
-              <button type="button" id="clear-btn" class="btn btn-secondary btn-action" disabled>
-                <span class="btn-icon">↺</span> Clear
-              </button>
-            </div>
-
-            <!-- Utility Controls: Skip & Reset -->
-            <div class="utility-btn-group">
-              <button type="button" id="skip-btn" class="btn btn-ghost" title="Discard this puzzle and request a fresh one">
-                <span>Skip Puzzle</span> ⏩
-              </button>
-              <button type="button" id="reset-btn" class="btn btn-ghost" title="Reset current session score to zero">
-                <span>Reset Stats</span> 🔄
-              </button>
-            </div>
-
-            <!-- Keyboard Accessibility Hint -->
-            <div class="keyboard-hint" aria-hidden="true">
-              <span class="kbd-badge">⌨️ Keys: 0–9</span>
-              <span class="kbd-badge">Enter ↵</span>
-              <span class="kbd-badge">Esc ⎋</span>
-            </div>
-          </aside>
+        <div class="info-box">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Uses session cookies on the Node.js server to maintain state across pages.</span>
         </div>
-      </section>
-    </main>
-
-    <!-- Floating Toast Notifications Container -->
-    <aside id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></aside>
-
-    <!-- Accessible Academic Attribution Footer -->
-    <footer class="app-footer" role="contentinfo">
-      <div class="footer-content">
-        <p class="footer-attribution">
-          <strong>CIS046-3: Software For Enterprise</strong> • Assignment 1 Submission • 
-          <span>University of Bedfordshire</span>
-        </p>
-        <p class="footer-credits">
-          Math Puzzle Web Service powered by 
-          <a href="https://marcconrad.com/uob/banana/doc.php" target="_blank" rel="noopener noreferrer">
-            Dr. Marc Conrad's Banana API
-          </a>.
-        </p>
       </div>
-    </footer>
-  </div>
+    </section>
 
-  <!-- Event-Driven Frontend Controller -->
+    <!-- 2. Game View -->
+    <section id="game-section" class="view-panel hidden">
+      
+      <!-- Stats Dashboard / HUD -->
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-icon icon-blue"><i class="fa-solid fa-user"></i></div>
+          <div class="stat-details">
+            <span class="stat-title">Player</span>
+            <span id="hud-player-name" class="stat-number player-name">-</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-yellow"><i class="fa-solid fa-star"></i></div>
+          <div class="stat-details">
+            <span class="stat-title">Current Score</span>
+            <span id="hud-score" class="stat-number score-number">0</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-orange"><i id="hud-streak-icon" class="fa-solid fa-fire"></i></div>
+          <div class="stat-details">
+            <span class="stat-title">Streak</span>
+            <span id="hud-streak" class="stat-number">0x</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-green"><i class="fa-solid fa-trophy"></i></div>
+          <div class="stat-details">
+            <span class="stat-title">High Score</span>
+            <span id="hud-high-score" class="stat-number">0</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-purple"><i class="fa-solid fa-gamepad"></i></div>
+          <div class="stat-details">
+            <span class="stat-title">Puzzles Played</span>
+            <span id="hud-rounds" class="stat-number">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Game Board -->
+      <div class="game-board">
+        
+        <!-- Left: Puzzle Display Area -->
+        <div id="puzzle-card" class="card puzzle-card">
+          <div class="card-top-bar">
+            <span class="badge badge-info">
+              <i class="fa-solid fa-cloud"></i> <span id="puzzle-source-tag">Banana API Puzzle</span>
+            </span>
+            <span id="fallback-indicator" class="badge badge-warning hidden">
+              <i class="fa-solid fa-triangle-exclamation"></i> Offline Fallback
+            </span>
+          </div>
+
+          <div class="puzzle-view">
+            <!-- Loading Indicator -->
+            <div id="puzzle-loader" class="puzzle-loading-state">
+              <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+              <p>Loading new puzzle...</p>
+            </div>
+
+            <!-- Puzzle Image -->
+            <img 
+              id="puzzle-img" 
+              class="puzzle-image hidden" 
+              src="" 
+              alt="Math puzzle from API"
+            >
+          </div>
+
+          <!-- Answer Result Banner -->
+          <div id="feedback-banner" class="feedback-box hidden">
+            <span id="feedback-icon"></span>
+            <span id="feedback-text"></span>
+          </div>
+        </div>
+
+        <!-- Right: Calculator / Number Pad -->
+        <div class="card keypad-card">
+          <div class="card-header-compact">
+            <h3>Enter Answer</h3>
+            <p>Work out the missing number and choose below (0-9):</p>
+          </div>
+
+          <!-- Selected Answer Display -->
+          <div class="selected-display">
+            <span class="display-label">Selected Number:</span>
+            <div id="current-answer-box" class="display-box">
+              <span id="answer-placeholder">-</span>
+              <span id="answer-value" class="hidden"></span>
+            </div>
+          </div>
+
+          <!-- Keypad Grid (0-9) -->
+          <div id="keypad-grid" class="keypad">
+            <button type="button" class="btn-key" data-digit="1">1</button>
+            <button type="button" class="btn-key" data-digit="2">2</button>
+            <button type="button" class="btn-key" data-digit="3">3</button>
+            <button type="button" class="btn-key" data-digit="4">4</button>
+            <button type="button" class="btn-key" data-digit="5">5</button>
+            <button type="button" class="btn-key" data-digit="6">6</button>
+            <button type="button" class="btn-key" data-digit="7">7</button>
+            <button type="button" class="btn-key" data-digit="8">8</button>
+            <button type="button" class="btn-key" data-digit="9">9</button>
+            <button type="button" class="btn-key btn-zero" data-digit="0">0</button>
+          </div>
+
+          <!-- Main Actions -->
+          <div class="keypad-actions">
+            <button type="button" id="submit-btn" class="btn btn-success" disabled>
+              <i class="fa-solid fa-check"></i> Submit
+            </button>
+            <button type="button" id="clear-btn" class="btn btn-secondary" disabled>
+              <i class="fa-solid fa-xmark"></i> Clear
+            </button>
+          </div>
+
+          <!-- Extra Controls -->
+          <div class="extra-controls">
+            <button type="button" id="skip-btn" class="btn btn-link">
+              <i class="fa-solid fa-forward-step"></i> Skip Puzzle
+            </button>
+            <button type="button" id="reset-btn" class="btn btn-link">
+              <i class="fa-solid fa-rotate"></i> Reset Score
+            </button>
+          </div>
+
+          <!-- Keyboard Help -->
+          <div class="keyboard-tip">
+            <small><i class="fa-regular fa-keyboard"></i> Tip: You can also use your keyboard keys (0-9) and Enter.</small>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-wrapper"></div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <p>
+        <strong>CIS046-3 Software For Enterprise</strong> • Assignment 1 • University of Bedfordshire
+      </p>
+      <p class="footer-note">
+        External Puzzle API by <a href="https://marcconrad.com/uob/banana/doc.php" target="_blank" rel="noopener">Dr. Marc Conrad</a>.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Client Script -->
   <script src="app.js"></script>
 </body>
 </html>
