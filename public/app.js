@@ -1,51 +1,40 @@
-/**
- * ==============================================================================
- * CIS046-3 Software For Enterprise — Assignment 1: Banana Challenge Enterprise System
- * ==============================================================================
- * Student Name: Utsab
- * Academic Year: 2026/2027
- * Institution: University of Bedfordshire
+/* ==============================================================================
+ * CIS046-3: Software for Enterprise - Assignment 1
+ * Banana Math Game - Client Side Logic (app.js)
  *
- * TIER 1: Event-Driven Client Controller
- *
- * DEMONSTRATION OF CORE THEMES:
- * 1. Event-Driven Programming: DOM event listeners (click, keydown, submit),
- *    asynchronous non-blocking network I/O via Promises & async/await.
- * 2. Virtual Identity: Session tracking across stateless HTTP, player HUD sync,
- *    and automated session resumption via HTTP-only cookie.
- * 3. Interoperability: Consuming Tier 2 API Gateway which securely proxies
- *    Dr. Marc Conrad's Banana API and isolates the mathematical puzzle solution.
- * ==============================================================================
- */
+ * Demonstrates:
+ * - Version Control (Git)
+ * - Event-Driven Programming (DOM events, async/await, fetch)
+ * - Interoperability (Integration with Marc Conrad's Banana API via our Node.js server)
+ * - Virtual Identity (Session management using express-session and cookies)
+ * ============================================================================== */
 
-// Global Application State Store (Tier 1 Client Cache)
-const AppState = {
-  user: null,               // Active virtual identity { username, score, streak, highScore, roundsPlayed }
-  selectedAnswer: null,     // Currently chosen integer answer (0-9)
-  isLoadingPuzzle: false,   // True while network fetch is in flight
-  isSubmittingAnswer: false // True while answer evaluation is in flight
+// Local state for the game
+const state = {
+  user: null,               // Holds the current player info (username, score, streak)
+  selectedAnswer: null,     // Currently selected digit (0-9)
+  isLoading: false,         // Flag to prevent spamming while fetching puzzle
+  isSubmitting: false       // Flag to prevent double submissions
 };
 
-// ==============================================================================
-// 1. DOM ELEMENT REFERENCES (Cached for high performance)
-// ==============================================================================
+// Cached DOM Elements
 const DOM = {
-  // Navigation & Session
+  // Session & Header
   sessionBadge: document.getElementById('session-badge'),
   sessionStatusText: document.getElementById('session-status-text'),
   logoutBtn: document.getElementById('logout-btn'),
 
-  // View Sections
+  // Panels
   authSection: document.getElementById('auth-section'),
   gameSection: document.getElementById('game-section'),
 
-  // Auth Form Elements
+  // Login Form
   loginForm: document.getElementById('login-form'),
   usernameInput: document.getElementById('username-input'),
   usernameError: document.getElementById('username-error'),
   loginBtn: document.getElementById('login-btn'),
 
-  // Telemetry HUD Elements
+  // HUD / Stats
   hudPlayerName: document.getElementById('hud-player-name'),
   hudScore: document.getElementById('hud-score'),
   hudStreak: document.getElementById('hud-streak'),
@@ -53,7 +42,7 @@ const DOM = {
   hudHighScore: document.getElementById('hud-high-score'),
   hudRounds: document.getElementById('hud-rounds'),
 
-  // Puzzle Elements
+  // Puzzle Area
   puzzleCard: document.getElementById('puzzle-card'),
   puzzleLoader: document.getElementById('puzzle-loader'),
   puzzleImg: document.getElementById('puzzle-img'),
@@ -63,7 +52,7 @@ const DOM = {
   feedbackIcon: document.getElementById('feedback-icon'),
   feedbackText: document.getElementById('feedback-text'),
 
-  // Answer & Keypad Console
+  // Keypad & Answer
   currentAnswerBox: document.getElementById('current-answer-box'),
   answerPlaceholder: document.getElementById('answer-placeholder'),
   answerValue: document.getElementById('answer-value'),
@@ -73,117 +62,93 @@ const DOM = {
   skipBtn: document.getElementById('skip-btn'),
   resetBtn: document.getElementById('reset-btn'),
 
-  // Notifications
+  // Toast Alerts
   toastContainer: document.getElementById('toast-container')
 };
 
-// ==============================================================================
-// 2. CENTRALIZED ASYNCHRONOUS API CLIENT
-// Wraps native fetch() with credentials and standard error handling
-// ==============================================================================
-async function apiRequest(endpoint, options = {}) {
-  const defaultOptions = {
+// -----------------------------------------------------------------------------
+// Helper: Send HTTP requests to backend API
+// -----------------------------------------------------------------------------
+async function api(url, options = {}) {
+  const config = {
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json'
     },
-    credentials: 'same-origin' // Ensures HTTP-only connect.sid cookie is sent
+    credentials: 'same-origin', // Ensure session cookie (connect.sid) is sent
+    ...options
   };
 
-  const config = { ...defaultOptions, ...options };
   if (config.body && typeof config.body === 'object') {
     config.body = JSON.stringify(config.body);
   }
 
   try {
-    const response = await fetch(endpoint, config);
-    const data = await response.json();
-    return { ok: response.ok, status: response.status, data };
-  } catch (error) {
-    console.error(`[API Network Error] Request to ${endpoint} failed:`, error);
-    return { ok: false, status: 0, data: { error: 'Network communication failure. Please check your connection.' } };
+    const res = await fetch(url, config);
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  } catch (err) {
+    console.error('API call error:', err);
+    return { ok: false, data: { error: 'Network error. Please try again.' } };
   }
 }
 
-// ==============================================================================
-// 3. TOAST NOTIFICATION SYSTEM
-// Non-intrusive floating feedback alerts
-// ==============================================================================
-function showToast(message, type = 'info', duration = 3500) {
+// -----------------------------------------------------------------------------
+// Helper: Show floating toast messages
+// -----------------------------------------------------------------------------
+function showToast(message, type = 'info', duration = 3000) {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
 
-  const iconMap = {
-    success: '🎉',
-    error: '⚠️',
-    info: 'ℹ️'
-  };
+  const iconTag = type === 'success' 
+    ? '<i class="fa-solid fa-circle-check"></i>' 
+    : type === 'error' 
+      ? '<i class="fa-solid fa-circle-exclamation"></i>' 
+      : '<i class="fa-solid fa-circle-info"></i>';
 
-  toast.innerHTML = `
-    <span class="toast-icon">${iconMap[type] || 'ℹ️'}</span>
-    <span class="toast-message">${message}</span>
-  `;
-
+  toast.innerHTML = `${iconTag} <span>${message}</span>`;
   DOM.toastContainer.appendChild(toast);
 
-  // Auto-dismiss with transition
   setTimeout(() => {
     toast.classList.add('toast-hiding');
     toast.addEventListener('transitionend', () => toast.remove());
   }, duration);
 }
 
-// ==============================================================================
-// 4. UI RENDERERS & HUD SYNCHRONIZERS
-// ==============================================================================
-
-/**
- * Updates telemetry HUD nodes with reactive player metrics
- */
+// -----------------------------------------------------------------------------
+// UI Updates: Stats and Panels
+// -----------------------------------------------------------------------------
 function updateHUD(user) {
   if (!user) return;
   DOM.hudPlayerName.textContent = user.username;
-  DOM.hudScore.textContent = user.score.toLocaleString();
+  DOM.hudScore.textContent = user.score;
   DOM.hudStreak.textContent = `${user.streak}x`;
-  DOM.hudHighScore.textContent = user.highScore.toLocaleString();
+  DOM.hudHighScore.textContent = user.highScore;
   DOM.hudRounds.textContent = user.roundsPlayed;
-
-  // Visual flourish: dynamic fire aura on active streak
-  if (user.streak > 1) {
-    DOM.hudStreakIcon.parentElement.parentElement.classList.add('streak-active');
-  } else {
-    DOM.hudStreakIcon.parentElement.parentElement.classList.remove('streak-active');
-  }
 }
 
-/**
- * Toggles application views between Login Portal and Game Arena
- */
-function renderView(viewName) {
-  if (viewName === 'game') {
+function switchView(view) {
+  if (view === 'game') {
     DOM.authSection.classList.add('hidden');
     DOM.gameSection.classList.remove('hidden');
     DOM.logoutBtn.classList.remove('hidden');
 
-    DOM.sessionBadge.className = 'session-badge badge-active';
-    DOM.sessionStatusText.textContent = `Online: ${AppState.user.username}`;
+    DOM.sessionBadge.className = 'session-pill active';
+    DOM.sessionStatusText.textContent = state.user.username;
   } else {
     DOM.gameSection.classList.add('hidden');
     DOM.authSection.classList.remove('hidden');
     DOM.logoutBtn.classList.add('hidden');
 
-    DOM.sessionBadge.className = 'session-badge badge-guest';
-    DOM.sessionStatusText.textContent = 'Guest Mode';
+    DOM.sessionBadge.className = 'session-pill guest';
+    DOM.sessionStatusText.textContent = 'Not Logged In';
     DOM.usernameInput.value = '';
     DOM.usernameInput.focus();
   }
 }
 
-/**
- * Synchronizes the answer preview box and buttons state
- */
-function setSelectedAnswer(digit) {
-  AppState.selectedAnswer = digit;
+function selectDigit(digit) {
+  state.selectedAnswer = digit;
 
   if (digit !== null) {
     DOM.answerPlaceholder.classList.add('hidden');
@@ -194,9 +159,8 @@ function setSelectedAnswer(digit) {
     DOM.submitBtn.disabled = false;
     DOM.clearBtn.disabled = false;
 
-    // Highlight corresponding keypad button
     DOM.keypadButtons.forEach((btn) => {
-      btn.classList.toggle('key-active', btn.dataset.digit === String(digit));
+      btn.classList.toggle('active', btn.dataset.digit === String(digit));
     });
   } else {
     DOM.answerPlaceholder.classList.remove('hidden');
@@ -207,164 +171,146 @@ function setSelectedAnswer(digit) {
     DOM.submitBtn.disabled = true;
     DOM.clearBtn.disabled = true;
 
-    DOM.keypadButtons.forEach((btn) => btn.classList.remove('key-active'));
+    DOM.keypadButtons.forEach((btn) => btn.classList.remove('active'));
   }
 }
 
-/**
- * Displays feedback banner under the puzzle
- */
-function showFeedbackBanner(isCorrect, message) {
-  DOM.feedbackBanner.className = `feedback-banner feedback-${isCorrect ? 'correct' : 'incorrect'}`;
-  DOM.feedbackIcon.textContent = isCorrect ? '✅' : '❌';
+function showResultBanner(isCorrect, message) {
+  DOM.feedbackBanner.className = `feedback-box ${isCorrect ? 'correct' : 'incorrect'}`;
+  DOM.feedbackIcon.innerHTML = isCorrect 
+    ? '<i class="fa-solid fa-circle-check"></i>' 
+    : '<i class="fa-solid fa-circle-xmark"></i>';
   DOM.feedbackText.textContent = message;
   DOM.feedbackBanner.classList.remove('hidden');
 }
 
-function hideFeedbackBanner() {
+function hideResultBanner() {
   DOM.feedbackBanner.classList.add('hidden');
 }
 
-// ==============================================================================
-// 5. ASYNCHRONOUS GAME ENGINE DISPATCHERS
-// ==============================================================================
+// -----------------------------------------------------------------------------
+// Game Actions: Fetch Puzzle & Submit Answer
+// -----------------------------------------------------------------------------
+async function loadNewPuzzle() {
+  if (state.isLoading) return;
+  state.isLoading = true;
 
-/**
- * Fetches a new mathematical puzzle from the Tier 2 Gateway
- */
-async function fetchNewPuzzle() {
-  if (AppState.isLoadingPuzzle) return;
-  AppState.isLoadingPuzzle = true;
+  selectDigit(null);
+  hideResultBanner();
 
-  // Clear previous answer and feedback
-  setSelectedAnswer(null);
-  hideFeedbackBanner();
-
-  // Show skeleton loading state
   DOM.puzzleLoader.classList.remove('hidden');
   DOM.puzzleImg.classList.add('hidden');
   DOM.skipBtn.disabled = true;
 
-  const result = await apiRequest('/api/game/new-puzzle');
-
-  AppState.isLoadingPuzzle = false;
+  const res = await api('/api/game/new-puzzle');
+  state.isLoading = false;
   DOM.skipBtn.disabled = false;
 
-  if (!result.ok) {
-    showToast(result.data.error || 'Failed to fetch puzzle.', 'error');
+  if (!res.ok) {
+    showToast(res.data.error || 'Could not load puzzle.', 'error');
     DOM.puzzleLoader.classList.add('hidden');
     return;
   }
 
-  // Check if offline resilience fallback was used
-  if (result.data.isFallback) {
+  // Handle fallback state if Banana API was down
+  if (res.data.isFallback) {
     DOM.fallbackIndicator.classList.remove('hidden');
-    DOM.puzzleSourceTag.textContent = 'Offline Fallback Engine';
+    DOM.puzzleSourceTag.textContent = 'Offline Fallback';
   } else {
     DOM.fallbackIndicator.classList.add('hidden');
-    DOM.puzzleSourceTag.textContent = 'Live Banana API (Tier 3)';
+    DOM.puzzleSourceTag.textContent = 'Banana API Puzzle';
   }
 
-  // Preload and smoothly reveal the puzzle image
+  // Load and show image
   const img = new Image();
-  img.src = result.data.question;
+  img.src = res.data.question;
   img.onload = () => {
-    DOM.puzzleImg.src = result.data.question;
+    DOM.puzzleImg.src = res.data.question;
     DOM.puzzleLoader.classList.add('hidden');
     DOM.puzzleImg.classList.remove('hidden');
   };
   img.onerror = () => {
     DOM.puzzleLoader.classList.add('hidden');
-    showToast('Failed to render puzzle image from CDN.', 'error');
+    showToast('Failed to load puzzle image from server.', 'error');
   };
 }
 
-/**
- * Submits the selected answer guess to Tier 2 for server-side evaluation
- */
-async function submitAnswer() {
-  if (AppState.selectedAnswer === null || AppState.isSubmittingAnswer) return;
-  AppState.isSubmittingAnswer = true;
+async function handleAnswerSubmit() {
+  if (state.selectedAnswer === null || state.isSubmitting) return;
+  state.isSubmitting = true;
   DOM.submitBtn.disabled = true;
 
-  const result = await apiRequest('/api/game/submit-answer', {
+  const res = await api('/api/game/submit-answer', {
     method: 'POST',
-    body: { answer: AppState.selectedAnswer }
+    body: { answer: state.selectedAnswer }
   });
 
-  AppState.isSubmittingAnswer = false;
+  state.isSubmitting = false;
 
-  if (!result.ok) {
-    showToast(result.data.error || 'Submission failed.', 'error');
+  if (!res.ok) {
+    showToast(res.data.error || 'Failed to submit answer.', 'error');
     DOM.submitBtn.disabled = false;
     return;
   }
 
-  const { correct, message, user } = result.data;
+  const { correct, message, user } = res.data;
 
-  // Synchronize state and HUD
-  AppState.user = user;
+  // Update HUD
+  state.user = user;
   updateHUD(user);
 
-  // Trigger sensory micro-animations
+  // Micro-animations for visual feedback
   if (correct) {
     DOM.puzzleCard.classList.remove('shake-animation');
     DOM.puzzleCard.classList.add('celebrate-animation');
-    setTimeout(() => DOM.puzzleCard.classList.remove('celebrate-animation'), 650);
+    setTimeout(() => DOM.puzzleCard.classList.remove('celebrate-animation'), 500);
 
-    showFeedbackBanner(true, message);
+    showResultBanner(true, message);
     showToast(message, 'success');
 
-    // Automatically load next puzzle after short celebration pause
+    // Automatically load next puzzle after short delay
     setTimeout(() => {
-      fetchNewPuzzle();
+      loadNewPuzzle();
     }, 1200);
   } else {
     DOM.puzzleCard.classList.remove('celebrate-animation');
     DOM.puzzleCard.classList.add('shake-animation');
-    setTimeout(() => DOM.puzzleCard.classList.remove('shake-animation'), 500);
+    setTimeout(() => DOM.puzzleCard.classList.remove('shake-animation'), 400);
 
-    showFeedbackBanner(false, message);
+    showResultBanner(false, message);
     showToast(message, 'error');
 
-    // Automatically load next puzzle after short pause
     setTimeout(() => {
-      fetchNewPuzzle();
+      loadNewPuzzle();
     }, 1800);
   }
 }
 
-// ==============================================================================
-// 6. EVENT-DRIVEN PROGRAMMING LISTENERS (Theme 2 Demonstration)
-// ==============================================================================
-
-function setupEventListeners() {
-  // --------------------------------------------------------------------------
-  // Event 1: DOMContentLoaded (Automated Session Resumption via Cookie)
-  // --------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Setup Event Listeners (Theme 2: Event-Driven Programming)
+// -----------------------------------------------------------------------------
+function initEvents() {
+  // 1. On page load: Check if user already has an active session cookie
   window.addEventListener('DOMContentLoaded', async () => {
-    const sessionCheck = await apiRequest('/api/auth/me');
-
-    if (sessionCheck.ok && sessionCheck.data.authenticated) {
-      AppState.user = sessionCheck.data.user;
-      renderView('game');
-      updateHUD(AppState.user);
-      showToast(`Welcome back, ${AppState.user.username}! Session resumed.`, 'info');
-      fetchNewPuzzle();
+    const res = await api('/api/auth/me');
+    if (res.ok && res.data.authenticated) {
+      state.user = res.data.user;
+      switchView('game');
+      updateHUD(state.user);
+      showToast(`Welcome back, ${state.user.username}!`, 'info');
+      loadNewPuzzle();
     } else {
-      renderView('auth');
+      switchView('auth');
     }
   });
 
-  // --------------------------------------------------------------------------
-  // Event 2: Submit on Login Form (Virtual Identity Registration)
-  // --------------------------------------------------------------------------
+  // 2. Login Form Submit
   DOM.loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Prevents default HTTP form reload
+    e.preventDefault();
 
     const username = DOM.usernameInput.value.trim();
     if (!username) {
-      DOM.usernameError.textContent = 'Please provide a valid player nickname.';
+      DOM.usernameError.textContent = 'Please enter a username.';
       DOM.usernameError.classList.remove('hidden');
       return;
     }
@@ -372,96 +318,83 @@ function setupEventListeners() {
     DOM.usernameError.classList.add('hidden');
     DOM.loginBtn.disabled = true;
 
-    const result = await apiRequest('/api/auth/login', {
+    const res = await api('/api/auth/login', {
       method: 'POST',
       body: { username }
     });
 
     DOM.loginBtn.disabled = false;
 
-    if (!result.ok) {
-      DOM.usernameError.textContent = result.data.error || 'Login failed.';
+    if (!res.ok) {
+      DOM.usernameError.textContent = res.data.error || 'Login failed.';
       DOM.usernameError.classList.remove('hidden');
       return;
     }
 
-    AppState.user = result.data.user;
-    renderView('game');
-    updateHUD(AppState.user);
-    showToast(`Identity initialized: Welcome ${AppState.user.username}!`, 'success');
-    fetchNewPuzzle();
+    state.user = res.data.user;
+    switchView('game');
+    updateHUD(state.user);
+    showToast(`Hello ${state.user.username}, let's play!`, 'success');
+    loadNewPuzzle();
   });
 
-  // --------------------------------------------------------------------------
-  // Event 3: Click on Virtual Keypad Buttons (0 to 9)
-  // --------------------------------------------------------------------------
+  // 3. Keypad Buttons Click (0-9)
   DOM.keypadButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       const digit = parseInt(btn.dataset.digit, 10);
-      setSelectedAnswer(digit);
+      selectDigit(digit);
     });
   });
 
-  // --------------------------------------------------------------------------
-  // Event 4: Physical Keyboard Keydown Event Listener
-  // --------------------------------------------------------------------------
+  // 4. Physical Keyboard Input (0-9, Enter, Escape)
   window.addEventListener('keydown', (e) => {
-    // Only capture keyboard shortcuts when in active game view
     if (DOM.gameSection.classList.contains('hidden')) return;
 
-    // Numbers 0 through 9
     if (e.key >= '0' && e.key <= '9') {
       const digit = parseInt(e.key, 10);
-      setSelectedAnswer(digit);
-    } 
-    // Enter key triggers submission
-    else if (e.key === 'Enter') {
-      if (AppState.selectedAnswer !== null && !AppState.isSubmittingAnswer) {
-        submitAnswer();
+      selectDigit(digit);
+    } else if (e.key === 'Enter') {
+      if (state.selectedAnswer !== null && !state.isSubmitting) {
+        handleAnswerSubmit();
       }
-    } 
-    // Escape or Backspace clears selection
-    else if (e.key === 'Escape' || e.key === 'Backspace') {
-      setSelectedAnswer(null);
+    } else if (e.key === 'Escape' || e.key === 'Backspace') {
+      selectDigit(null);
     }
   });
 
-  // --------------------------------------------------------------------------
-  // Event 5: Primary Action Buttons (Submit, Clear, Skip, Reset, Logout)
-  // --------------------------------------------------------------------------
-  DOM.submitBtn.addEventListener('click', submitAnswer);
+  // 5. Control Buttons
+  DOM.submitBtn.addEventListener('click', handleAnswerSubmit);
 
   DOM.clearBtn.addEventListener('click', () => {
-    setSelectedAnswer(null);
+    selectDigit(null);
   });
 
   DOM.skipBtn.addEventListener('click', () => {
-    showToast('Skipping current puzzle...', 'info', 2000);
-    fetchNewPuzzle();
+    showToast('Skipping puzzle...', 'info', 1500);
+    loadNewPuzzle();
   });
 
   DOM.resetBtn.addEventListener('click', async () => {
-    if (!confirm('Are you sure you want to reset your score and streak to zero?')) return;
-
-    const result = await apiRequest('/api/game/reset', { method: 'POST' });
-    if (result.ok) {
-      AppState.user = result.data.user;
-      updateHUD(AppState.user);
-      showToast('Game statistics reset to 0.', 'info');
-      fetchNewPuzzle();
+    if (!confirm('Do you want to reset your score back to 0?')) return;
+    const res = await api('/api/game/reset', { method: 'POST' });
+    if (res.ok) {
+      state.user = res.data.user;
+      updateHUD(state.user);
+      showToast('Score has been reset.', 'info');
+      loadNewPuzzle();
     }
   });
 
   DOM.logoutBtn.addEventListener('click', async () => {
-    const result = await apiRequest('/api/auth/logout', { method: 'POST' });
-    if (result.ok) {
-      AppState.user = null;
-      AppState.selectedAnswer = null;
-      renderView('auth');
-      showToast('Logged out successfully.', 'info');
+    const res = await api('/api/auth/logout', { method: 'POST' });
+    if (res.ok) {
+      state.user = null;
+      state.selectedAnswer = null;
+      switchView('auth');
+      showToast('You have been logged out.', 'info');
     }
   });
 }
 
-// Initialize Event-Driven Architecture
-setupEventListeners();
+// Start event listeners
+initEvents();
