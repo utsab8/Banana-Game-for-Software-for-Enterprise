@@ -3,13 +3,257 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CIS046-3 Software For Enterprise — Banana Challenge Enterprise System demonstrating Version Control, Event-Driven Programming, Interoperability, and Virtual Identity.">
+  <meta name="author" content="Utsab">
   <title>Enterprise Banana Challenge | CIS046-3</title>
+  
+  <!-- Modern Google Fonts: Outfit (Display) & Inter (UI/Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <!-- Tier 1 Presentation GUI will be rendered here -->
+  <!-- Background Ambient Glow Accents -->
+  <div class="ambient-glow glow-top-left" aria-hidden="true"></div>
+  <div class="ambient-glow glow-bottom-right" aria-hidden="true"></div>
+
+  <div class="app-layout">
+    <!-- Top Enterprise Navigation Header -->
+    <header class="app-header" role="banner">
+      <div class="brand-container">
+        <div class="brand-logo" aria-hidden="true">🍌</div>
+        <div class="brand-text">
+          <h1 class="brand-title">Banana Challenge</h1>
+          <span class="brand-badge">CIS046-3 Enterprise Edition</span>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div id="session-badge" class="session-badge badge-guest" aria-live="polite">
+          <span class="status-dot"></span>
+          <span id="session-status-text">Guest Mode</span>
+        </div>
+        <button id="logout-btn" class="btn btn-outline btn-sm hidden" aria-label="Terminate current session and log out">
+          <span class="btn-icon">🚪</span> Log Out
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-main" role="main">
+      <!-- ================================================================ -->
+      <!-- VIEW 1: VIRTUAL IDENTITY LOGIN PORTAL (Tier 4 demonstration)      -->
+      <!-- ================================================================ -->
+      <section id="auth-section" class="auth-section" aria-labelledby="auth-heading">
+        <div class="glass-card auth-card">
+          <div class="auth-icon" aria-hidden="true">🔐</div>
+          <h2 id="auth-heading" class="auth-title">Virtual Identity Portal</h2>
+          <p class="auth-subtitle">
+            Enter your player handle to establish a secure, stateful session cookie over stateless HTTP.
+          </p>
+
+          <form id="login-form" class="auth-form" novalidate>
+            <div class="form-group">
+              <label for="username-input" class="form-label">Player Nickname</label>
+              <div class="input-wrapper">
+                <span class="input-icon" aria-hidden="true">👤</span>
+                <input 
+                  type="text" 
+                  id="username-input" 
+                  name="username"
+                  class="form-input" 
+                  placeholder="e.g. EnterpriseCoder" 
+                  maxlength="25" 
+                  required 
+                  autofocus 
+                  autocomplete="username"
+                />
+              </div>
+              <span id="username-error" class="input-error-msg hidden" role="alert"></span>
+            </div>
+
+            <button type="submit" id="login-btn" class="btn btn-primary btn-block">
+              <span>Start Challenge Arena</span>
+              <span class="btn-arrow" aria-hidden="true">→</span>
+            </button>
+          </form>
+
+          <div class="auth-architecture-note">
+            <div class="note-pill">
+              <span class="pill-dot"></span> 3-Tier Enterprise Boundary
+            </div>
+            <p>
+              Your virtual identity is stored server-side via <code>express-session</code> and secured with an encrypted HTTP-only cookie.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- VIEW 2: GAME ARENA DASHBOARD (Tiers 1, 2, and 3 integration)      -->
+      <!-- ================================================================ -->
+      <section id="game-section" class="game-section hidden" aria-labelledby="arena-heading">
+        <h2 id="arena-heading" class="sr-only">Interactive Puzzle Arena</h2>
+
+        <!-- Telemetry HUD Bar -->
+        <section class="telemetry-hud" aria-label="Player Statistics HUD">
+          <div class="hud-item player-hud-card">
+            <span class="hud-label">Player</span>
+            <div class="hud-value-group">
+              <span class="hud-avatar">👤</span>
+              <span id="hud-player-name" class="hud-value highlight-player">Player</span>
+            </div>
+          </div>
+
+          <div class="hud-item">
+            <span class="hud-label">Score</span>
+            <span id="hud-score" class="hud-value highlight-gold">0</span>
+          </div>
+
+          <div class="hud-item">
+            <span class="hud-label">Streak</span>
+            <div class="hud-value-group">
+              <span id="hud-streak-icon" class="streak-icon">⚡</span>
+              <span id="hud-streak" class="hud-value">0x</span>
+            </div>
+          </div>
+
+          <div class="hud-item">
+            <span class="hud-label">High Score</span>
+            <span id="hud-high-score" class="hud-value highlight-emerald">0</span>
+          </div>
+
+          <div class="hud-item">
+            <span class="hud-label">Rounds</span>
+            <span id="hud-rounds" class="hud-value">0</span>
+          </div>
+        </section>
+
+        <!-- Main Game Stage Grid (Puzzle + Keypad) -->
+        <div class="game-grid">
+          <!-- Puzzle Presentation Canvas -->
+          <article id="puzzle-card" class="glass-card puzzle-card" aria-label="Current Mathematical Puzzle">
+            <div class="puzzle-header">
+              <div class="puzzle-tag">
+                <span class="tag-icon">🧩</span>
+                <span id="puzzle-source-tag">Live Banana API (Tier 3)</span>
+              </div>
+              <div id="fallback-indicator" class="fallback-indicator hidden" title="Upstream API fallback engaged">
+                <span class="fallback-dot"></span> Offline Fallback
+              </div>
+            </div>
+
+            <!-- Puzzle Image Canvas Container -->
+            <div class="puzzle-canvas-wrapper">
+              <!-- Loading Skeleton State -->
+              <div id="puzzle-loader" class="puzzle-skeleton" aria-label="Loading puzzle image">
+                <div class="skeleton-shimmer"></div>
+                <div class="skeleton-text">
+                  <span class="spinner"></span>
+                  <span>Fetching puzzle from Tier 3...</span>
+                </div>
+              </div>
+
+              <!-- Live Puzzle Image -->
+              <img 
+                id="puzzle-img" 
+                class="puzzle-img hidden" 
+                src="" 
+                alt="Algebraic banana mathematical puzzle image" 
+              />
+            </div>
+
+            <!-- Feedback Banner -->
+            <div id="feedback-banner" class="feedback-banner hidden" role="status" aria-live="polite">
+              <span id="feedback-icon" class="feedback-icon"></span>
+              <span id="feedback-text" class="feedback-text"></span>
+            </div>
+          </article>
+
+          <!-- Interactive Control Console (0-9 Keypad & Actions) -->
+          <aside class="glass-card control-console" aria-label="Interactive Answer Pad">
+            <div class="console-header">
+              <h3 class="console-title">Select Your Answer</h3>
+              <p class="console-desc">Solve the algebraic matrix and enter the missing number (0–9).</p>
+            </div>
+
+            <!-- Active Answer Display Screen -->
+            <div class="answer-preview-screen" aria-live="polite">
+              <span class="preview-label">Your Deduction:</span>
+              <div id="current-answer-box" class="answer-digit-box" aria-label="Currently selected answer digit">
+                <span id="answer-placeholder" class="placeholder-text">?</span>
+                <span id="answer-value" class="value-text hidden"></span>
+              </div>
+            </div>
+
+            <!-- 0–9 Numeric Virtual Keypad Grid -->
+            <div id="keypad-grid" class="keypad-grid" role="group" aria-label="Numeric input keypad">
+              <button type="button" class="btn-key" data-digit="1">1</button>
+              <button type="button" class="btn-key" data-digit="2">2</button>
+              <button type="button" class="btn-key" data-digit="3">3</button>
+              <button type="button" class="btn-key" data-digit="4">4</button>
+              <button type="button" class="btn-key" data-digit="5">5</button>
+              <button type="button" class="btn-key" data-digit="6">6</button>
+              <button type="button" class="btn-key" data-digit="7">7</button>
+              <button type="button" class="btn-key" data-digit="8">8</button>
+              <button type="button" class="btn-key" data-digit="9">9</button>
+              <button type="button" class="btn-key btn-key-zero" data-digit="0">0</button>
+            </div>
+
+            <!-- Primary Action Console Buttons -->
+            <div class="action-btn-group">
+              <button type="button" id="submit-btn" class="btn btn-primary btn-action" disabled>
+                <span class="btn-icon">✓</span> Submit Answer
+              </button>
+              <button type="button" id="clear-btn" class="btn btn-secondary btn-action" disabled>
+                <span class="btn-icon">↺</span> Clear
+              </button>
+            </div>
+
+            <!-- Utility Controls: Skip & Reset -->
+            <div class="utility-btn-group">
+              <button type="button" id="skip-btn" class="btn btn-ghost" title="Discard this puzzle and request a fresh one">
+                <span>Skip Puzzle</span> ⏩
+              </button>
+              <button type="button" id="reset-btn" class="btn btn-ghost" title="Reset current session score to zero">
+                <span>Reset Stats</span> 🔄
+              </button>
+            </div>
+
+            <!-- Keyboard Accessibility Hint -->
+            <div class="keyboard-hint" aria-hidden="true">
+              <span class="kbd-badge">⌨️ Keys: 0–9</span>
+              <span class="kbd-badge">Enter ↵</span>
+              <span class="kbd-badge">Esc ⎋</span>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <!-- Floating Toast Notifications Container -->
+    <aside id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></aside>
+
+    <!-- Accessible Academic Attribution Footer -->
+    <footer class="app-footer" role="contentinfo">
+      <div class="footer-content">
+        <p class="footer-attribution">
+          <strong>CIS046-3: Software For Enterprise</strong> • Assignment 1 Submission • 
+          <span>University of Bedfordshire</span>
+        </p>
+        <p class="footer-credits">
+          Math Puzzle Web Service powered by 
+          <a href="https://marcconrad.com/uob/banana/doc.php" target="_blank" rel="noopener noreferrer">
+            Dr. Marc Conrad's Banana API
+          </a>.
+        </p>
+      </div>
+    </footer>
   </div>
+
+  <!-- Event-Driven Frontend Controller -->
   <script src="app.js"></script>
 </body>
 </html>
