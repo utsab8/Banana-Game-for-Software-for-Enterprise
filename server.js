@@ -353,6 +353,7 @@ app.post('/api/game/reset', requireAuth, (req, res) => {
     success: true,
     message: 'Game telemetry reset successfully.',
     user: {
+      username: user.username,
       score: user.score,
       streak: user.streak,
       highScore: user.highScore,
