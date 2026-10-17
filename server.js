@@ -24,6 +24,7 @@ const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
 const path = require('path');
+const db = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -165,9 +166,9 @@ async function fetchBananaPuzzle() {
 
 /**
  * POST /api/auth/login
- * Creates a new virtual identity session bound to a chosen nickname
+ * Creates or retrieves a persistent virtual identity in SQLite bound to a chosen nickname
  */
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const rawUsername = req.body.username;
 
   if (!rawUsername || typeof rawUsername !== 'string') {
@@ -180,23 +181,32 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(400).json({ success: false, error: 'Username cannot be blank.' });
   }
 
-  // Initialize player telemetry inside server-side session
-  req.session.user = {
-    username: sanitizedUsername,
-    score: 0,
-    streak: 0,
-    highScore: 0,
-    roundsPlayed: 0,
-    sessionStarted: new Date().toISOString()
-  };
+  try {
+    // Retrieve existing user or register new user in SQLite
+    const dbUser = await db.findOrCreateUser(sanitizedUsername);
 
-  req.session.currentSolution = null;
+    // Initialize player telemetry inside server-side session backed by SQLite record
+    req.session.user = {
+      id: dbUser.id,
+      username: dbUser.username,
+      score: dbUser.score || 0,
+      streak: dbUser.streak || 0,
+      highScore: dbUser.high_score || 0,
+      roundsPlayed: dbUser.rounds_played || 0,
+      sessionStarted: new Date().toISOString()
+    };
 
-  return res.json({
-    success: true,
-    message: `Virtual identity '${sanitizedUsername}' initialized successfully.`,
-    user: req.session.user
-  });
+    req.session.currentSolution = null;
+
+    return res.json({
+      success: true,
+      message: `Virtual identity '${dbUser.username}' loaded from SQLite successfully.`,
+      user: req.session.user
+    });
+  } catch (error) {
+    console.error('[SQLite Auth Error]', error);
+    return res.status(500).json({ success: false, error: 'Database authentication failed.' });
+  }
 });
 
 /**
@@ -249,6 +259,7 @@ app.get('/api/game/new-puzzle', requireAuth, async (req, res) => {
     // Stash the integer solution securely in the server session.
     // The client NEVER receives 'solution' in this response!
     req.session.currentSolution = puzzle.solution;
+    req.session.currentIsFallback = puzzle.isFallback;
     req.session.puzzleIssuedAt = Date.now();
 
     return res.json({
@@ -273,9 +284,9 @@ app.get('/api/game/new-puzzle', requireAuth, async (req, res) => {
 
 /**
  * POST /api/game/submit-answer
- * Evaluates the player's guess against the server-vaulted solution
+ * Evaluates the player's guess against the server-vaulted solution and logs to SQLite
  */
-app.post('/api/game/submit-answer', requireAuth, (req, res) => {
+app.post('/api/game/submit-answer', requireAuth, async (req, res) => {
   const { answer } = req.body;
 
   // Validate active puzzle existence
@@ -297,6 +308,7 @@ app.post('/api/game/submit-answer', requireAuth, (req, res) => {
 
   const expectedSolution = req.session.currentSolution;
   const isCorrect = parsedAnswer === expectedSolution;
+  const isFallback = Boolean(req.session.currentIsFallback);
 
   // Update user session telemetry
   const user = req.session.user;
@@ -322,6 +334,30 @@ app.post('/api/game/submit-answer', requireAuth, (req, res) => {
 
   // Anti-Replay Security: Wipe solution from session after evaluation
   req.session.currentSolution = null;
+  req.session.currentIsFallback = false;
+
+  // Persist telemetry and round attempt to SQLite
+  try {
+    if (user.id) {
+      await db.updateUserStats(user.id, {
+        score: user.score,
+        streak: user.streak,
+        highScore: user.highScore,
+        roundsPlayed: user.roundsPlayed
+      });
+
+      await db.recordRound({
+        userId: user.id,
+        userAnswer: parsedAnswer,
+        solution: expectedSolution,
+        isCorrect,
+        pointsAwarded,
+        isFallback
+      });
+    }
+  } catch (dbErr) {
+    console.error('[SQLite Write Error] Failed to persist game telemetry:', dbErr.message);
+  }
 
   return res.json({
     success: true,
@@ -341,13 +377,21 @@ app.post('/api/game/submit-answer', requireAuth, (req, res) => {
 
 /**
  * POST /api/game/reset
- * Resets score and streak counters for the current virtual player session
+ * Resets score and streak counters for the current virtual player session and SQLite
  */
-app.post('/api/game/reset', requireAuth, (req, res) => {
+app.post('/api/game/reset', requireAuth, async (req, res) => {
   const user = req.session.user;
   user.score = 0;
   user.streak = 0;
   req.session.currentSolution = null;
+
+  try {
+    if (user.id) {
+      await db.resetUserScore(user.id);
+    }
+  } catch (dbErr) {
+    console.error('[SQLite Reset Error]', dbErr.message);
+  }
 
   return res.json({
     success: true,
@@ -362,16 +406,64 @@ app.post('/api/game/reset', requireAuth, (req, res) => {
   });
 });
 
+/**
+ * GET /api/game/leaderboard
+ * Retrieves top ranking players from SQLite database
+ */
+app.get('/api/game/leaderboard', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 50);
+    const leaderboard = await db.getLeaderboard(limit);
+    return res.json({
+      success: true,
+      leaderboard
+    });
+  } catch (error) {
+    console.error('[SQLite Leaderboard Error]', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve leaderboard from database.' });
+  }
+});
+
+/**
+ * GET /api/game/history
+ * Retrieves recent round history for the active authenticated user
+ */
+app.get('/api/game/history', requireAuth, async (req, res) => {
+  try {
+    const history = await db.getUserHistory(req.session.user.id, 5);
+    return res.json({
+      success: true,
+      history
+    });
+  } catch (error) {
+    console.error('[SQLite History Error]', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve game history from database.' });
+  }
+});
+
 // ==============================================================================
 // 6. SERVER INITIALIZATION & NON-BLOCKING EVENT LOOP LISTENER
-// Demonstrates Theme 2: Server-side asynchronous Event-Driven loop
+// Demonstrates Theme 2: Server-side asynchronous Event-Driven loop with SQLite init
 // ==============================================================================
 
-app.listen(PORT, () => {
-  console.log(`========================================================`);
-  console.log(`🍌 Enterprise Banana Challenge System (CIS046-3)`);
-  console.log(`🚀 Application Server active at: http://localhost:${PORT}`);
-  console.log(`🔒 Session Security: HTTP-Only Cookies Enabled`);
-  console.log(`🌐 Interoperability Gateway: Connected to Marc Conrad API`);
-  console.log(`========================================================`);
-});
+async function startServer() {
+  try {
+    // Initialize SQLite schema and indexes before accepting client traffic
+    await db.initDatabase();
+
+    app.listen(PORT, () => {
+      console.log(`========================================================`);
+      console.log(`🍌 Enterprise Banana Challenge System (CIS046-3)`);
+      console.log(`🚀 Application Server active at: http://localhost:${PORT}`);
+      console.log(`💾 SQLite Persistence: Connected (${db.DB_PATH})`);
+      console.log(`🔒 Session Security: HTTP-Only Cookies Enabled`);
+      console.log(`🌐 Interoperability Gateway: Connected to Marc Conrad API`);
+      console.log(`========================================================`);
+    });
+  } catch (error) {
+    console.error('Fatal Server Initialization Error:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

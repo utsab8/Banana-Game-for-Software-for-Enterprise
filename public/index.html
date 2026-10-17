@@ -33,11 +33,18 @@
       </div>
 
       <div class="nav-actions">
+        <div class="session-pill db-pill" title="SQLite Database Connected">
+          <i class="fa-solid fa-database"></i>
+          <span>SQLite Connected</span>
+        </div>
+        <button type="button" id="leaderboard-nav-btn" class="btn btn-sm btn-outline">
+          <i class="fa-solid fa-trophy"></i> Leaderboard
+        </button>
         <div id="session-badge" class="session-pill guest">
           <i class="fa-solid fa-circle-user"></i>
           <span id="session-status-text">Not Logged In</span>
         </div>
-        <button id="logout-btn" class="btn btn-sm btn-outline hidden">
+        <button type="button" id="logout-btn" class="btn btn-sm btn-outline hidden">
           <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
         </button>
       </div>
@@ -228,9 +235,110 @@
 
       </div>
 
+      <!-- SQLite Enterprise Leaderboard & Audit Log -->
+      <div class="card data-card">
+        <div class="data-card-header">
+          <div class="tab-buttons">
+            <button type="button" id="tab-btn-leaderboard" class="tab-btn active">
+              <i class="fa-solid fa-trophy"></i> SQLite Global Leaderboard
+            </button>
+            <button type="button" id="tab-btn-history" class="tab-btn">
+              <i class="fa-solid fa-clock-rotate-left"></i> My Audit Trail
+            </button>
+          </div>
+          <div class="data-header-meta">
+            <span class="badge badge-db-small"><i class="fa-solid fa-database"></i> SQLite 3</span>
+            <button type="button" id="refresh-data-btn" class="btn btn-sm btn-link" title="Refresh SQLite data">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Leaderboard Tab -->
+        <div id="tab-content-leaderboard" class="data-table-container">
+          <table class="enterprise-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Rank</th>
+                <th>Player</th>
+                <th>High Score</th>
+                <th>Best Streak</th>
+                <th>Total Rounds</th>
+                <th>Last Active</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody">
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Loading SQLite records...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- History Tab -->
+        <div id="tab-content-history" class="data-table-container hidden">
+          <table class="enterprise-table">
+            <thead>
+              <tr>
+                <th>Round #</th>
+                <th>Your Guess</th>
+                <th>Vault Solution</th>
+                <th>Result</th>
+                <th>Points</th>
+                <th>Source</th>
+                <th>Logged At</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">No rounds logged yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </section>
 
   </main>
+
+  <!-- Leaderboard Modal (Quick-view from anywhere) -->
+  <div id="leaderboard-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-trophy text-yellow"></i>
+          <h3>SQLite Hall of Fame</h3>
+        </div>
+        <button type="button" id="modal-close-btn" class="btn-close" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Persistent high scores stored in the local SQLite database across server runs.</p>
+        <div class="data-table-container">
+          <table class="enterprise-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Rank</th>
+                <th>Player</th>
+                <th>High Score</th>
+                <th>Best Streak</th>
+                <th>Rounds</th>
+              </tr>
+            </thead>
+            <tbody id="modal-leaderboard-tbody">
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">Loading SQLite leaderboard...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-wrapper"></div>

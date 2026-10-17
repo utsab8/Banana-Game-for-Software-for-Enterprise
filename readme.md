@@ -72,11 +72,15 @@ Security Note on Interoperability: To prevent client-side inspection vulnerabili
 
 
 
-Runtime \& Backend: Node.js, Express.js
+Runtime & Backend: Node.js, Express.js
 
 
 
-Session Management: express-session (Cookie-based session store)
+Database: SQLite3 (Embedded ACID-compliant relational store with WAL mode)
+
+
+
+Session Management: express-session (Cookie-based session store + SQLite persistent profiles)
 
 
 
@@ -104,11 +108,13 @@ Version Control: Git \& GitHub (Feature branch workflow)
 
 │   └── app.js           # Client-side event listeners and DOM dispatchers
 
-├── .gitignore           # Git ignore rules (node\_modules, logs, secrets)
+├── database.js          # SQLite3 schema, migrations, connection and queries
+
+├── .gitignore           # Git ignore rules (node_modules, logs, secrets, db files)
 
 ├── package.json         # Project metadata and dependencies
 
-├── server.js            # Express server, session controller \& API proxy
+├── server.js            # Express server, SQLite controller & API proxy
 
 └── README.md            # Comprehensive project documentation
 

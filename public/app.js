@@ -63,7 +63,20 @@ const DOM = {
   resetBtn: document.getElementById('reset-btn'),
 
   // Toast Alerts
-  toastContainer: document.getElementById('toast-container')
+  toastContainer: document.getElementById('toast-container'),
+
+  // Leaderboard & SQLite Data
+  leaderboardNavBtn: document.getElementById('leaderboard-nav-btn'),
+  leaderboardModal: document.getElementById('leaderboard-modal'),
+  modalCloseBtn: document.getElementById('modal-close-btn'),
+  modalLeaderboardTbody: document.getElementById('modal-leaderboard-tbody'),
+  tabBtnLeaderboard: document.getElementById('tab-btn-leaderboard'),
+  tabBtnHistory: document.getElementById('tab-btn-history'),
+  tabContentLeaderboard: document.getElementById('tab-content-leaderboard'),
+  tabContentHistory: document.getElementById('tab-content-history'),
+  refreshDataBtn: document.getElementById('refresh-data-btn'),
+  leaderboardTbody: document.getElementById('leaderboard-tbody'),
+  historyTbody: document.getElementById('history-tbody')
 };
 
 // -----------------------------------------------------------------------------
@@ -189,6 +202,114 @@ function hideResultBanner() {
 }
 
 // -----------------------------------------------------------------------------
+// SQLite Persistence & Leaderboard Engine
+// -----------------------------------------------------------------------------
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+async function loadLeaderboard() {
+  const res = await api('/api/game/leaderboard');
+  if (!res.ok || !res.data || !res.data.leaderboard) {
+    const errHtml = `<tr><td colspan="6" class="text-center py-4 text-muted">Unable to load SQLite leaderboard.</td></tr>`;
+    if (DOM.leaderboardTbody) DOM.leaderboardTbody.innerHTML = errHtml;
+    if (DOM.modalLeaderboardTbody) DOM.modalLeaderboardTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Unable to load SQLite leaderboard.</td></tr>`;
+    return;
+  }
+
+  const list = res.data.leaderboard;
+  if (list.length === 0) {
+    const emptyHtml = `<tr><td colspan="6" class="text-center py-4 text-muted">No players recorded in SQLite yet. Play a round to rank #1!</td></tr>`;
+    if (DOM.leaderboardTbody) DOM.leaderboardTbody.innerHTML = emptyHtml;
+    if (DOM.modalLeaderboardTbody) DOM.modalLeaderboardTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No records yet.</td></tr>`;
+    return;
+  }
+
+  const rowsHtml = list.map((player, idx) => {
+    const rank = idx + 1;
+    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+    const isCurrent = state.user && state.user.username.toLowerCase() === player.username.toLowerCase();
+    const highlightStyle = isCurrent ? 'font-weight: 700; background-color: #f0fdf4;' : '';
+    const dateFormatted = player.last_active_at ? new Date(player.last_active_at).toLocaleDateString() : '-';
+
+    return `
+      <tr style="${highlightStyle}">
+        <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+        <td><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge badge-db-small">You</span>' : ''}</td>
+        <td><span class="score-number">${player.high_score}</span> pts</td>
+        <td>${player.streak}x</td>
+        <td>${player.rounds_played}</td>
+        <td>${dateFormatted}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const modalRowsHtml = list.map((player, idx) => {
+    const rank = idx + 1;
+    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+    const isCurrent = state.user && state.user.username.toLowerCase() === player.username.toLowerCase();
+    const highlightStyle = isCurrent ? 'font-weight: 700; background-color: #f0fdf4;' : '';
+
+    return `
+      <tr style="${highlightStyle}">
+        <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+        <td><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' (You)' : ''}</td>
+        <td>${player.high_score} pts</td>
+        <td>${player.streak}x</td>
+        <td>${player.rounds_played}</td>
+      </tr>
+    `;
+  }).join('');
+
+  if (DOM.leaderboardTbody) DOM.leaderboardTbody.innerHTML = rowsHtml;
+  if (DOM.modalLeaderboardTbody) DOM.modalLeaderboardTbody.innerHTML = modalRowsHtml;
+}
+
+async function loadUserHistory() {
+  if (!state.user) return;
+  const res = await api('/api/game/history');
+  if (!res.ok || !res.data || !res.data.history) return;
+
+  const history = res.data.history;
+  if (history.length === 0) {
+    if (DOM.historyTbody) {
+      DOM.historyTbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">No rounds recorded yet for ${escapeHtml(state.user.username)}.</td></tr>`;
+    }
+    return;
+  }
+
+  if (DOM.historyTbody) {
+    DOM.historyTbody.innerHTML = history.map((round, idx) => {
+      const resultBadge = round.is_correct 
+        ? '<span class="badge-correct"><i class="fa-solid fa-check"></i> Correct</span>'
+        : '<span class="badge-incorrect"><i class="fa-solid fa-xmark"></i> Incorrect</span>';
+      const sourceBadge = round.is_fallback
+        ? '<span class="badge badge-warning" style="font-size: 0.7rem;">Offline SVG</span>'
+        : '<span class="badge badge-info" style="font-size: 0.7rem;">Banana API</span>';
+      const time = round.played_at ? new Date(round.played_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
+
+      return `
+        <tr>
+          <td>#${round.id || (idx + 1)}</td>
+          <td><strong>${round.user_answer}</strong></td>
+          <td><strong>${round.solution}</strong></td>
+          <td>${resultBadge}</td>
+          <td>+${round.points_awarded} pts</td>
+          <td>${sourceBadge}</td>
+          <td>${time}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Game Actions: Fetch Puzzle & Submit Answer
 // -----------------------------------------------------------------------------
 async function loadNewPuzzle() {
@@ -259,6 +380,10 @@ async function handleAnswerSubmit() {
   state.user = user;
   updateHUD(user);
 
+  // Refresh SQLite persistence views
+  loadLeaderboard();
+  loadUserHistory();
+
   // Micro-animations for visual feedback
   if (correct) {
     DOM.puzzleCard.classList.remove('shake-animation');
@@ -290,13 +415,16 @@ async function handleAnswerSubmit() {
 // Setup Event Listeners (Theme 2: Event-Driven Programming)
 // -----------------------------------------------------------------------------
 function initEvents() {
-  // 1. On page load: Check if user already has an active session cookie
+  // 1. On page load: Check session and initialize SQLite views
   window.addEventListener('DOMContentLoaded', async () => {
+    loadLeaderboard();
+
     const res = await api('/api/auth/me');
     if (res.ok && res.data.authenticated) {
       state.user = res.data.user;
       switchView('game');
       updateHUD(state.user);
+      loadUserHistory();
       showToast(`Welcome back, ${state.user.username}!`, 'info');
       loadNewPuzzle();
     } else {
@@ -334,6 +462,8 @@ function initEvents() {
     state.user = res.data.user;
     switchView('game');
     updateHUD(state.user);
+    loadLeaderboard();
+    loadUserHistory();
     showToast(`Hello ${state.user.username}, let's play!`, 'success');
     loadNewPuzzle();
   });
@@ -348,6 +478,12 @@ function initEvents() {
 
   // 4. Physical Keyboard Input (0-9, Enter, Escape)
   window.addEventListener('keydown', (e) => {
+    // If modal is open, Escape closes it
+    if (DOM.leaderboardModal && !DOM.leaderboardModal.classList.contains('hidden') && e.key === 'Escape') {
+      DOM.leaderboardModal.classList.add('hidden');
+      return;
+    }
+
     if (DOM.gameSection.classList.contains('hidden')) return;
 
     if (e.key >= '0' && e.key <= '9') {
@@ -384,6 +520,8 @@ function initEvents() {
       selectDigit(null);
       hideResultBanner();
       updateHUD(state.user);
+      loadLeaderboard();
+      loadUserHistory();
       showToast('Score has been reset to 0.', 'info');
       loadNewPuzzle();
     } else {
@@ -397,9 +535,58 @@ function initEvents() {
       state.user = null;
       state.selectedAnswer = null;
       switchView('auth');
+      loadLeaderboard();
       showToast('You have been logged out.', 'info');
     }
   });
+
+  // 6. SQLite Leaderboard & History Tabs
+  if (DOM.tabBtnLeaderboard && DOM.tabBtnHistory) {
+    DOM.tabBtnLeaderboard.addEventListener('click', () => {
+      DOM.tabBtnLeaderboard.classList.add('active');
+      DOM.tabBtnHistory.classList.remove('active');
+      DOM.tabContentLeaderboard.classList.remove('hidden');
+      DOM.tabContentHistory.classList.add('hidden');
+    });
+
+    DOM.tabBtnHistory.addEventListener('click', () => {
+      DOM.tabBtnHistory.classList.add('active');
+      DOM.tabBtnLeaderboard.classList.remove('active');
+      DOM.tabContentHistory.classList.remove('hidden');
+      DOM.tabContentLeaderboard.classList.add('hidden');
+      loadUserHistory();
+    });
+  }
+
+  // 7. Refresh SQLite Data Button
+  if (DOM.refreshDataBtn) {
+    DOM.refreshDataBtn.addEventListener('click', async () => {
+      DOM.refreshDataBtn.classList.add('fa-spin');
+      await Promise.all([loadLeaderboard(), loadUserHistory()]);
+      setTimeout(() => DOM.refreshDataBtn.classList.remove('fa-spin'), 600);
+      showToast('SQLite records refreshed.', 'info', 1500);
+    });
+  }
+
+  // 8. Leaderboard Modal Handlers
+  if (DOM.leaderboardNavBtn && DOM.leaderboardModal) {
+    DOM.leaderboardNavBtn.addEventListener('click', () => {
+      loadLeaderboard();
+      DOM.leaderboardModal.classList.remove('hidden');
+    });
+
+    if (DOM.modalCloseBtn) {
+      DOM.modalCloseBtn.addEventListener('click', () => {
+        DOM.leaderboardModal.classList.add('hidden');
+      });
+    }
+
+    DOM.leaderboardModal.addEventListener('click', (e) => {
+      if (e.target === DOM.leaderboardModal) {
+        DOM.leaderboardModal.classList.add('hidden');
+      }
+    });
+  }
 }
 
 // Start event listeners
