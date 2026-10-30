@@ -28,11 +28,26 @@ const DOM = {
   authSection: document.getElementById('auth-section'),
   gameSection: document.getElementById('game-section'),
 
-  // Login Form
+  // Auth Tabs & Forms
+  tabBtnLogin: document.getElementById('tab-btn-login'),
+  tabBtnRegister: document.getElementById('tab-btn-register'),
   loginForm: document.getElementById('login-form'),
-  usernameInput: document.getElementById('username-input'),
-  usernameError: document.getElementById('username-error'),
+  loginIdentifier: document.getElementById('login-identifier'),
+  loginPassword: document.getElementById('login-password'),
+  loginPwdToggle: document.getElementById('login-pwd-toggle'),
+  loginError: document.getElementById('login-error'),
   loginBtn: document.getElementById('login-btn'),
+  guestPlayBtn: document.getElementById('guest-play-btn'),
+
+  registerForm: document.getElementById('register-form'),
+  regUsername: document.getElementById('reg-username'),
+  regEmail: document.getElementById('reg-email'),
+  regPassword: document.getElementById('reg-password'),
+  regConfirmPassword: document.getElementById('reg-confirm-password'),
+  regPwdToggle: document.getElementById('reg-pwd-toggle'),
+  regConfirmPwdToggle: document.getElementById('reg-confirm-pwd-toggle'),
+  registerError: document.getElementById('register-error'),
+  registerBtn: document.getElementById('register-btn'),
 
   // HUD / Stats
   hudPlayerName: document.getElementById('hud-player-name'),
@@ -146,17 +161,21 @@ function switchView(view) {
     DOM.gameSection.classList.remove('hidden');
     DOM.logoutBtn.classList.remove('hidden');
 
-    DOM.sessionBadge.className = 'session-pill active';
+    DOM.sessionBadge.className = 'player-chip active';
     DOM.sessionStatusText.textContent = state.user.username;
   } else {
     DOM.gameSection.classList.add('hidden');
     DOM.authSection.classList.remove('hidden');
     DOM.logoutBtn.classList.add('hidden');
 
-    DOM.sessionBadge.className = 'session-pill guest';
+    DOM.sessionBadge.className = 'player-chip guest';
     DOM.sessionStatusText.textContent = 'Not Logged In';
-    DOM.usernameInput.value = '';
-    DOM.usernameInput.focus();
+    if (DOM.loginIdentifier) {
+      DOM.loginIdentifier.value = '';
+    }
+    if (DOM.loginPassword) {
+      DOM.loginPassword.value = '';
+    }
   }
 }
 
@@ -231,7 +250,7 @@ async function loadLeaderboard() {
     return;
   }
 
-  const rowsHtml = list.map((player, idx) => {
+    const rowsHtml = list.map((player, idx) => {
     const rank = idx + 1;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
     const isCurrent = state.user && state.user.username.toLowerCase() === player.username.toLowerCase();
@@ -241,11 +260,11 @@ async function loadLeaderboard() {
     return `
       <tr style="${highlightStyle}">
         <td><span class="rank-badge ${rankClass}">${rank}</span></td>
-        <td><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge badge-db-small">You</span>' : ''}</td>
-        <td><span class="score-number">${player.high_score}</span> pts</td>
-        <td>${player.streak}x</td>
-        <td>${player.rounds_played}</td>
-        <td>${dateFormatted}</td>
+        <td><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge-db-small">You</span>' : ''}</td>
+        <td class="text-right"><strong class="mono-val">${player.high_score}</strong> <span class="text-muted" style="font-size: 0.75rem;">pts</span></td>
+        <td class="text-center"><span class="mono-val">${player.streak}x</span></td>
+        <td class="text-center"><span class="mono-val">${player.rounds_played}</span></td>
+        <td><span class="text-muted" style="font-size: 0.78rem;">${dateFormatted}</span></td>
       </tr>
     `;
   }).join('');
@@ -259,10 +278,10 @@ async function loadLeaderboard() {
     return `
       <tr style="${highlightStyle}">
         <td><span class="rank-badge ${rankClass}">${rank}</span></td>
-        <td><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' (You)' : ''}</td>
-        <td>${player.high_score} pts</td>
-        <td>${player.streak}x</td>
-        <td>${player.rounds_played}</td>
+        <td><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge-db-small">You</span>' : ''}</td>
+        <td class="text-right"><strong class="mono-val">${player.high_score}</strong> pts</td>
+        <td class="text-center"><span class="mono-val">${player.streak}x</span></td>
+        <td class="text-center"><span class="mono-val">${player.rounds_played}</span></td>
       </tr>
     `;
   }).join('');
@@ -287,22 +306,22 @@ async function loadUserHistory() {
   if (DOM.historyTbody) {
     DOM.historyTbody.innerHTML = history.map((round, idx) => {
       const resultBadge = round.is_correct 
-        ? '<span class="badge-correct"><i class="fa-solid fa-check"></i> Correct</span>'
-        : '<span class="badge-incorrect"><i class="fa-solid fa-xmark"></i> Incorrect</span>';
+        ? '<span class="badge-outcome-correct"><i class="fa-solid fa-check"></i> Validated</span>'
+        : '<span class="badge-outcome-wrong"><i class="fa-solid fa-xmark"></i> Rejected</span>';
       const sourceBadge = round.is_fallback
-        ? '<span class="badge badge-warning" style="font-size: 0.7rem;">Offline SVG</span>'
-        : '<span class="badge badge-info" style="font-size: 0.7rem;">Banana API</span>';
+        ? '<span class="status-badge fallback-badge" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">Offline SVG</span>'
+        : '<span class="status-badge source-badge" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">Banana API</span>';
       const time = round.played_at ? new Date(round.played_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
 
       return `
         <tr>
-          <td>#${round.id || (idx + 1)}</td>
-          <td><strong>${round.user_answer}</strong></td>
-          <td><strong>${round.solution}</strong></td>
+          <td><span class="mono-val" style="color: var(--text-muted);">#${round.id || (idx + 1)}</span></td>
+          <td class="text-center"><strong class="mono-val" style="font-size: 1.05rem;">${round.user_answer}</strong></td>
+          <td class="text-center"><strong class="mono-val" style="color: var(--primary); font-size: 1.05rem;">${round.solution}</strong></td>
           <td>${resultBadge}</td>
-          <td>+${round.points_awarded} pts</td>
+          <td class="text-right"><strong class="mono-val" style="color: ${round.points_awarded > 0 ? 'var(--success)' : 'var(--text-muted)'};">+${round.points_awarded}</strong> pts</td>
           <td>${sourceBadge}</td>
-          <td>${time}</td>
+          <td><span class="mono-val" style="font-size: 0.75rem; color: var(--text-muted);">${time}</span></td>
         </tr>
       `;
     }).join('');
@@ -432,41 +451,230 @@ function initEvents() {
     }
   });
 
-  // 2. Login Form Submit
-  DOM.loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const username = DOM.usernameInput.value.trim();
-    if (!username) {
-      DOM.usernameError.textContent = 'Please enter a username.';
-      DOM.usernameError.classList.remove('hidden');
-      return;
+  // Helpers: Set & Clear Form Errors
+  function setFormError(errorEl, message, showCreateLink = false, identifier = '') {
+    if (!errorEl) return;
+    const contentSpan = errorEl.querySelector('.error-msg-content') || errorEl;
+    if (showCreateLink && identifier) {
+      contentSpan.innerHTML = `${escapeHtml(message)} <button type="button" id="quick-create-link" class="btn-link-highlight" style="margin-left: 4px; text-decoration: underline;">Create this account?</button>`;
+      const link = document.getElementById('quick-create-link');
+      if (link) {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (DOM.tabBtnRegister) DOM.tabBtnRegister.click();
+          if (DOM.regUsername) DOM.regUsername.value = identifier;
+          if (DOM.regPassword) DOM.regPassword.focus();
+        });
+      }
+    } else {
+      contentSpan.textContent = message;
     }
+    errorEl.classList.remove('hidden');
+  }
 
-    DOM.usernameError.classList.add('hidden');
-    DOM.loginBtn.disabled = true;
+  function clearFormError(errorEl) {
+    if (!errorEl) return;
+    errorEl.classList.add('hidden');
+    const contentSpan = errorEl.querySelector('.error-msg-content') || errorEl;
+    contentSpan.textContent = '';
+  }
 
-    const res = await api('/api/auth/login', {
-      method: 'POST',
-      body: { username }
+  // 2. Auth Tab Switching
+  if (DOM.tabBtnLogin && DOM.tabBtnRegister) {
+    DOM.tabBtnLogin.addEventListener('click', () => {
+      DOM.tabBtnLogin.classList.add('active');
+      DOM.tabBtnRegister.classList.remove('active');
+      DOM.tabBtnLogin.setAttribute('aria-selected', 'true');
+      DOM.tabBtnRegister.setAttribute('aria-selected', 'false');
+      DOM.loginForm.classList.remove('hidden');
+      DOM.registerForm.classList.add('hidden');
+      clearFormError(DOM.loginError);
+      clearFormError(DOM.registerError);
+      if (DOM.loginIdentifier) DOM.loginIdentifier.focus();
     });
 
-    DOM.loginBtn.disabled = false;
+    DOM.tabBtnRegister.addEventListener('click', () => {
+      DOM.tabBtnRegister.classList.add('active');
+      DOM.tabBtnLogin.classList.remove('active');
+      DOM.tabBtnRegister.setAttribute('aria-selected', 'true');
+      DOM.tabBtnLogin.setAttribute('aria-selected', 'false');
+      DOM.registerForm.classList.remove('hidden');
+      DOM.loginForm.classList.add('hidden');
+      clearFormError(DOM.loginError);
+      clearFormError(DOM.registerError);
+      if (DOM.regUsername) DOM.regUsername.focus();
+    });
+  }
 
-    if (!res.ok) {
-      DOM.usernameError.textContent = res.data.error || 'Login failed.';
-      DOM.usernameError.classList.remove('hidden');
-      return;
-    }
+  // Quick switch links at bottom of forms
+  const switchToRegisterBtn = document.getElementById('switch-to-register-btn');
+  const switchToLoginBtn = document.getElementById('switch-to-login-btn');
+  if (switchToRegisterBtn) {
+    switchToRegisterBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (DOM.tabBtnRegister) DOM.tabBtnRegister.click();
+    });
+  }
+  if (switchToLoginBtn) {
+    switchToLoginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (DOM.tabBtnLogin) DOM.tabBtnLogin.click();
+    });
+  }
 
-    state.user = res.data.user;
-    switchView('game');
-    updateHUD(state.user);
-    loadLeaderboard();
-    loadUserHistory();
-    showToast(`Hello ${state.user.username}, let's play!`, 'success');
-    loadNewPuzzle();
-  });
+  // Clear errors when user types
+  if (DOM.loginIdentifier) DOM.loginIdentifier.addEventListener('input', () => clearFormError(DOM.loginError));
+  if (DOM.loginPassword) DOM.loginPassword.addEventListener('input', () => clearFormError(DOM.loginError));
+  if (DOM.regUsername) DOM.regUsername.addEventListener('input', () => clearFormError(DOM.registerError));
+  if (DOM.regEmail) DOM.regEmail.addEventListener('input', () => clearFormError(DOM.registerError));
+  if (DOM.regPassword) DOM.regPassword.addEventListener('input', () => clearFormError(DOM.registerError));
+  if (DOM.regConfirmPassword) DOM.regConfirmPassword.addEventListener('input', () => clearFormError(DOM.registerError));
+
+  // 3. Password Visibility Toggles
+  function setupPwdToggle(toggleBtn, inputEl) {
+    if (!toggleBtn || !inputEl) return;
+    toggleBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isPassword = inputEl.type === 'password';
+      inputEl.type = isPassword ? 'text' : 'password';
+      toggleBtn.innerHTML = isPassword 
+        ? '<i class="fa-solid fa-eye-slash"></i>' 
+        : '<i class="fa-solid fa-eye"></i>';
+      toggleBtn.setAttribute('title', isPassword ? 'Hide password' : 'Show password');
+      toggleBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      inputEl.focus();
+    });
+  }
+  setupPwdToggle(DOM.loginPwdToggle, DOM.loginPassword);
+  setupPwdToggle(DOM.regPwdToggle, DOM.regPassword);
+  setupPwdToggle(DOM.regConfirmPwdToggle, DOM.regConfirmPassword);
+
+  // 4. Sign In Form Submit (Email / Username + Password)
+  if (DOM.loginForm) {
+    DOM.loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const identifier = DOM.loginIdentifier.value.trim();
+      const password = DOM.loginPassword.value;
+
+      if (!identifier) {
+        setFormError(DOM.loginError, 'Please enter your username or email.');
+        return;
+      }
+
+      if (!password) {
+        setFormError(DOM.loginError, 'Please enter your password.');
+        return;
+      }
+
+      clearFormError(DOM.loginError);
+      DOM.loginBtn.disabled = true;
+
+      const res = await api('/api/auth/login', {
+        method: 'POST',
+        body: { identifier, password }
+      });
+
+      DOM.loginBtn.disabled = false;
+
+      if (!res.ok) {
+        const errMsg = res.data.error || 'Login failed. Please check your credentials.';
+        const isNotFound = res.status === 404;
+        setFormError(DOM.loginError, errMsg, isNotFound, identifier);
+        return;
+      }
+
+      state.user = res.data.user;
+      switchView('game');
+      updateHUD(state.user);
+      loadLeaderboard();
+      loadUserHistory();
+      showToast(`Welcome back, ${state.user.username}!`, 'success');
+      loadNewPuzzle();
+    });
+  }
+
+  // 5. Register Form Submit (Username, Email, Password, Confirm Password)
+  if (DOM.registerForm) {
+    DOM.registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = DOM.regUsername.value.trim();
+      const email = DOM.regEmail.value.trim();
+      const password = DOM.regPassword.value;
+      const confirmPassword = DOM.regConfirmPassword.value;
+
+      if (!username || username.length < 3) {
+        setFormError(DOM.registerError, 'Username must be at least 3 characters.');
+        return;
+      }
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setFormError(DOM.registerError, 'Please enter a valid email address.');
+        return;
+      }
+
+      if (!password || password.length < 6) {
+        setFormError(DOM.registerError, 'Password must be at least 6 characters.');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setFormError(DOM.registerError, 'Passwords do not match.');
+        return;
+      }
+
+      clearFormError(DOM.registerError);
+      DOM.registerBtn.disabled = true;
+
+      const res = await api('/api/auth/register', {
+        method: 'POST',
+        body: { username, email, password }
+      });
+
+      DOM.registerBtn.disabled = false;
+
+      if (!res.ok) {
+        setFormError(DOM.registerError, res.data.error || 'Registration failed.');
+        return;
+      }
+
+      state.user = res.data.user;
+      switchView('game');
+      updateHUD(state.user);
+      loadLeaderboard();
+      loadUserHistory();
+      showToast(`Account created! Welcome, ${state.user.username}!`, 'success');
+      loadNewPuzzle();
+    });
+  }
+
+  // 6. Instant Guest Play
+  if (DOM.guestPlayBtn) {
+    DOM.guestPlayBtn.addEventListener('click', async () => {
+      DOM.guestPlayBtn.disabled = true;
+      const guestName = `Guest_${Math.floor(1000 + Math.random() * 9000)}`;
+      const res = await api('/api/auth/login', {
+        method: 'POST',
+        body: { identifier: guestName }
+      });
+      DOM.guestPlayBtn.disabled = false;
+
+      if (!res.ok) {
+        DOM.loginError.textContent = res.data.error || 'Guest login failed.';
+        DOM.loginError.classList.remove('hidden');
+        return;
+      }
+
+      state.user = res.data.user;
+      switchView('game');
+      updateHUD(state.user);
+      loadLeaderboard();
+      loadUserHistory();
+      showToast(`Playing as ${state.user.username} (Guest)`, 'info');
+      loadNewPuzzle();
+    });
+  }
 
   // 3. Keypad Buttons Click (0-9)
   DOM.keypadButtons.forEach((btn) => {
@@ -530,8 +738,13 @@ function initEvents() {
   });
 
   DOM.logoutBtn.addEventListener('click', async () => {
-    const res = await api('/api/auth/logout', { method: 'POST' });
-    if (res.ok) {
+    DOM.logoutBtn.disabled = true;
+    try {
+      await api('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.warn('Logout network error:', err);
+    } finally {
+      DOM.logoutBtn.disabled = false;
       state.user = null;
       state.selectedAnswer = null;
       switchView('auth');

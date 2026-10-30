@@ -161,41 +161,150 @@ async function fetchBananaPuzzle() {
 }
 
 // ==============================================================================
-// 4. REST API ROUTES: VIRTUAL IDENTITY MANAGEMENT
+// 4. REST API ROUTES: VIRTUAL IDENTITY & USER AUTHENTICATION
 // ==============================================================================
 
 /**
- * POST /api/auth/login
- * Creates or retrieves a persistent virtual identity in SQLite bound to a chosen nickname
+ * POST /api/auth/register
+ * Registers a new player identity with username, email, and bcrypt hashed password
  */
-app.post('/api/auth/login', async (req, res) => {
-  const rawUsername = req.body.username;
+app.post('/api/auth/register', async (req, res) => {
+  const { username, email, password } = req.body;
 
-  if (!rawUsername || typeof rawUsername !== 'string') {
+  // 1. Validate username
+  if (!username || typeof username !== 'string') {
     return res.status(400).json({ success: false, error: 'A valid username is required.' });
   }
+  const sanitizedUsername = username.trim().slice(0, 25);
+  if (sanitizedUsername.length < 3) {
+    return res.status(400).json({ success: false, error: 'Username must be at least 3 characters long.' });
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(sanitizedUsername)) {
+    return res.status(400).json({ success: false, error: 'Username can only contain letters, numbers, underscores, and dashes.' });
+  }
 
-  const sanitizedUsername = rawUsername.trim().slice(0, 25);
+  // 2. Validate email
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ success: false, error: 'A valid email address is required.' });
+  }
+  const sanitizedEmail = email.trim().toLowerCase().slice(0, 100);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(sanitizedEmail)) {
+    return res.status(400).json({ success: false, error: 'Please enter a valid email address.' });
+  }
 
-  if (sanitizedUsername.length === 0) {
-    return res.status(400).json({ success: false, error: 'Username cannot be blank.' });
+  // 3. Validate password
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    return res.status(400).json({ success: false, error: 'Password must be at least 6 characters long.' });
   }
 
   try {
-    // Retrieve existing user or register new user in SQLite
+    // Check if username already exists
+    const existingUsername = await db.findUserByUsername(sanitizedUsername);
+    if (existingUsername) {
+      return res.status(409).json({ success: false, error: `Username '${sanitizedUsername}' is already taken.` });
+    }
+
+    // Check if email already exists
+    const existingEmail = await db.findUserByEmail(sanitizedEmail);
+    if (existingEmail) {
+      return res.status(409).json({ success: false, error: 'This email is already registered. Please sign in instead.' });
+    }
+
+    // Create user with bcrypt password hash
+    const newUser = await db.registerUser({
+      username: sanitizedUsername,
+      email: sanitizedEmail,
+      password
+    });
+
+    // Establish authenticated server-side session
+    req.session.user = {
+      id: newUser.id,
+      username: newUser.username,
+      email: newUser.email,
+      score: 0,
+      streak: 0,
+      highScore: 0,
+      roundsPlayed: 0,
+      sessionStarted: new Date().toISOString()
+    };
+    req.session.currentSolution = null;
+
+    return res.status(201).json({
+      success: true,
+      message: `Account registered successfully! Welcome, ${newUser.username}.`,
+      user: req.session.user
+    });
+  } catch (error) {
+    console.error('[SQLite Registration Error]', error);
+    return res.status(500).json({ success: false, error: 'Registration failed due to a database error.' });
+  }
+});
+
+/**
+ * POST /api/auth/login
+ * Authenticates a user using email or username + password, or supports nickname login fallback
+ */
+app.post('/api/auth/login', async (req, res) => {
+  const { identifier, username, email, password } = req.body;
+  const loginIdentifier = (identifier || username || email || '').trim();
+
+  if (!loginIdentifier) {
+    return res.status(400).json({ success: false, error: 'Username or email is required to sign in.' });
+  }
+
+  try {
+    // Case 1: Password is provided (Secure Password Authentication)
+    if (password && typeof password === 'string') {
+      const dbUser = await db.findUserByIdentifier(loginIdentifier);
+
+      if (!dbUser) {
+        return res.status(404).json({ success: false, error: 'No account found with that username or email.' });
+      }
+
+      // Check password if account has one set
+      if (dbUser.password_hash) {
+        const passwordMatches = await db.verifyPassword(password, dbUser.password_hash);
+        if (!passwordMatches) {
+          return res.status(401).json({ success: false, error: 'Incorrect password. Please try again.' });
+        }
+      }
+
+      // Initialize player telemetry in session
+      req.session.user = {
+        id: dbUser.id,
+        username: dbUser.username,
+        email: dbUser.email || null,
+        score: dbUser.score || 0,
+        streak: dbUser.streak || 0,
+        highScore: dbUser.high_score || 0,
+        roundsPlayed: dbUser.rounds_played || 0,
+        sessionStarted: new Date().toISOString()
+      };
+      req.session.currentSolution = null;
+
+      return res.json({
+        success: true,
+        message: `Welcome back, ${dbUser.username}!`,
+        user: req.session.user
+      });
+    }
+
+    // Case 2: No password provided (Instant Virtual Identity Nickname mode)
+    const sanitizedUsername = loginIdentifier.slice(0, 25);
     const dbUser = await db.findOrCreateUser(sanitizedUsername);
 
-    // Initialize player telemetry inside server-side session backed by SQLite record
     req.session.user = {
       id: dbUser.id,
       username: dbUser.username,
+      email: dbUser.email || null,
       score: dbUser.score || 0,
       streak: dbUser.streak || 0,
       highScore: dbUser.high_score || 0,
       roundsPlayed: dbUser.rounds_played || 0,
       sessionStarted: new Date().toISOString()
     };
-
     req.session.currentSolution = null;
 
     return res.json({
@@ -205,7 +314,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
   } catch (error) {
     console.error('[SQLite Auth Error]', error);
-    return res.status(500).json({ success: false, error: 'Database authentication failed.' });
+    return res.status(500).json({ success: false, error: 'Authentication failed due to a database error.' });
   }
 });
 

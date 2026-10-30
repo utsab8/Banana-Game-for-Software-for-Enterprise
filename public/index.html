@@ -3,198 +3,384 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Banana Math Game - CIS046-3 Enterprise Assignment</title>
+  <title>Banana Math Challenge — Fun Online Puzzle Game</title>
   
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍌</text></svg>">
   
-  <!-- Google Fonts: Inter -->
+  <!-- Premium Game Fonts: Outfit & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
   
-  <!-- Font Awesome Icons -->
+  <!-- Font Awesome Icons 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- Custom Styles -->
+  <!-- Custom Game Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="game-app">
 
-  <!-- Top Navbar -->
+  <!-- Subtle Playful Background Pattern -->
+  <div class="game-bg-pattern" aria-hidden="true"></div>
+
+  <!-- Top Game Navbar -->
   <header class="navbar">
     <div class="nav-container">
+      
+      <!-- Brand Logo & Game Title -->
       <div class="nav-brand">
-        <span class="brand-icon"><i class="fa-solid fa-puzzle-piece"></i></span>
-        <div>
-          <h1 class="brand-name">Banana Math Game</h1>
-          <span class="brand-course">CIS046-3: Software for Enterprise</span>
+        <div class="brand-logo">
+          <span class="logo-emoji">🍌</span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-name-row">
+            <span class="brand-title">Banana Math</span>
+            <span class="game-pill">CHALLENGE</span>
+          </div>
+          <span class="brand-tagline">Solve the puzzle &amp; beat your high score!</span>
         </div>
       </div>
 
+      <!-- Nav Actions -->
       <div class="nav-actions">
-        <div class="session-pill db-pill" title="SQLite Database Connected">
-          <i class="fa-solid fa-database"></i>
-          <span>SQLite Connected</span>
-        </div>
-        <button type="button" id="leaderboard-nav-btn" class="btn btn-sm btn-outline">
-          <i class="fa-solid fa-trophy"></i> Leaderboard
+        <!-- Leaderboard Trigger -->
+        <button type="button" id="leaderboard-nav-btn" class="nav-btn btn-leaderboard">
+          <i class="fa-solid fa-trophy"></i>
+          <span>Leaderboard</span>
         </button>
-        <div id="session-badge" class="session-pill guest">
-          <i class="fa-solid fa-circle-user"></i>
-          <span id="session-status-text">Not Logged In</span>
+
+        <!-- Current Player Identity Chip -->
+        <div id="session-badge" class="player-chip guest">
+          <div class="player-avatar" id="user-avatar-display">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <span id="session-status-text">Guest Player</span>
         </div>
-        <button type="button" id="logout-btn" class="btn btn-sm btn-outline hidden">
-          <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+
+        <!-- Logout Action -->
+        <button type="button" id="logout-btn" class="nav-btn btn-logout hidden" title="Sign out of game">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Logout</span>
         </button>
       </div>
+
     </div>
   </header>
 
-  <!-- Main Container -->
+  <!-- Main Game Container -->
   <main class="main-container">
     
-    <!-- 1. Login View -->
-    <section id="auth-section" class="view-panel">
-      <div class="card login-card">
-        <div class="card-header">
-          <div class="login-avatar">
-            <i class="fa-solid fa-user-lock"></i>
+    <!-- ==================================================================== -->
+    <!-- 1. AUTHENTICATION / PLAYER LOGIN & REGISTER VIEW                     -->
+    <!-- ==================================================================== -->
+    <section id="auth-section" class="view-panel auth-panel">
+      <div class="card login-card game-auth-card">
+        
+        <!-- Welcoming Card Header -->
+        <div class="auth-header">
+          <div class="auth-badge">
+            <span class="sparkle">✨</span>
+            <span>READY TO PLAY?</span>
           </div>
-          <h2>Player Login</h2>
-          <p class="subtitle">Enter your name or nickname to start playing. Your score and session will be saved automatically.</p>
+          <h2 class="auth-title">Join the Challenge</h2>
+          <p class="auth-desc">Sign in or register to save your high score, build streaks, and climb the global leaderboard!</p>
         </div>
 
-        <form id="login-form" class="login-form">
+        <!-- Segmented Tab Switcher: Sign In / Register -->
+        <div class="auth-tabs" role="tablist">
+          <button type="button" id="tab-btn-login" class="auth-tab-btn active" role="tab" aria-selected="true">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span>Sign In</span>
+          </button>
+          <button type="button" id="tab-btn-register" class="auth-tab-btn" role="tab" aria-selected="false">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Create Account</span>
+          </button>
+        </div>
+
+        <!-- Tab 1: Sign In Form -->
+        <form id="login-form" class="auth-form" autocomplete="on">
           <div class="input-group">
-            <label for="username-input">Enter Username</label>
+            <label for="login-identifier">Username or Email</label>
             <div class="input-with-icon">
-              <i class="fa-solid fa-user"></i>
+              <i class="fa-solid fa-user input-icon-left"></i>
               <input 
                 type="text" 
-                id="username-input" 
-                placeholder="e.g. JohnSmith" 
-                maxlength="25"
+                id="login-identifier" 
+                placeholder="Enter your username or email" 
                 required
-                autocomplete="off"
+                autocomplete="username"
               >
             </div>
-            <span id="username-error" class="error-msg hidden"></span>
           </div>
 
-          <button type="submit" id="login-btn" class="btn btn-primary btn-block">
-            <i class="fa-solid fa-right-to-bracket"></i> Start Game
+          <div class="input-group">
+            <div class="label-row">
+              <label for="login-password">Password</label>
+            </div>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock input-icon-left"></i>
+              <input 
+                type="password" 
+                id="login-password" 
+                placeholder="Enter your password" 
+                required
+                autocomplete="current-password"
+              >
+              <button type="button" class="pwd-toggle-btn" id="login-pwd-toggle" title="Show password" aria-label="Show password">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            <div id="login-error" class="auth-error-box hidden" role="alert">
+              <i class="fa-solid fa-circle-exclamation"></i>
+              <span class="error-msg-content"></span>
+            </div>
+          </div>
+
+          <button type="submit" id="login-btn" class="btn btn-game-primary btn-block btn-lg">
+            <span>Start Playing</span>
+            <i class="fa-solid fa-play"></i>
+          </button>
+
+          <div class="auth-switch-prompt">
+            <span>Don't have an account?</span>
+            <button type="button" id="switch-to-register-btn" class="btn-link-highlight">Create one now</button>
+          </div>
+
+          <div class="auth-divider">
+            <span>or play immediately</span>
+          </div>
+
+          <button type="button" id="guest-play-btn" class="btn btn-guest btn-block">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Instant Guest Play (No Password Needed)</span>
           </button>
         </form>
 
-        <div class="info-box">
-          <i class="fa-solid fa-shield-halved"></i>
-          <span>Uses session cookies on the Node.js server to maintain state across pages.</span>
-        </div>
+        <!-- Tab 2: Register Form (Hidden by default) -->
+        <form id="register-form" class="auth-form hidden" autocomplete="on">
+          <div class="input-group">
+            <label for="reg-username">Pick a Username</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-user-tag input-icon-left"></i>
+              <input 
+                type="text" 
+                id="reg-username" 
+                placeholder="e.g. BananaChampion" 
+                minlength="3"
+                maxlength="25"
+                required
+                autocomplete="username"
+              >
+            </div>
+            <span class="field-hint">3–25 characters (letters, numbers, dashes)</span>
+          </div>
+
+          <div class="input-group">
+            <label for="reg-email">Email Address</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-envelope input-icon-left"></i>
+              <input 
+                type="email" 
+                id="reg-email" 
+                placeholder="e.g. player@example.com" 
+                required
+                autocomplete="email"
+              >
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="reg-password">Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock input-icon-left"></i>
+              <input 
+                type="password" 
+                id="reg-password" 
+                placeholder="At least 6 characters" 
+                minlength="6"
+                required
+                autocomplete="new-password"
+              >
+              <button type="button" class="pwd-toggle-btn" id="reg-pwd-toggle" title="Show password" aria-label="Show password">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="reg-confirm-password">Confirm Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-circle-check input-icon-left"></i>
+              <input 
+                type="password" 
+                id="reg-confirm-password" 
+                placeholder="Repeat your password" 
+                minlength="6"
+                required
+                autocomplete="new-password"
+              >
+              <button type="button" class="pwd-toggle-btn" id="reg-confirm-pwd-toggle" title="Show password" aria-label="Show password">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            <div id="register-error" class="auth-error-box hidden" role="alert">
+              <i class="fa-solid fa-circle-exclamation"></i>
+              <span class="error-msg-content"></span>
+            </div>
+          </div>
+
+          <button type="submit" id="register-btn" class="btn btn-game-primary btn-block btn-lg">
+            <span>Create Account &amp; Play</span>
+            <i class="fa-solid fa-rocket"></i>
+          </button>
+
+          <div class="auth-switch-prompt">
+            <span>Already have an account?</span>
+            <button type="button" id="switch-to-login-btn" class="btn-link-highlight">Sign in here</button>
+          </div>
+        </form>
+
       </div>
     </section>
 
-    <!-- 2. Game View -->
+    <!-- ==================================================================== -->
+    <!-- 2. MAIN GAME ARENA & HUD VIEW                                        -->
+    <!-- ==================================================================== -->
     <section id="game-section" class="view-panel hidden">
       
-      <!-- Stats Dashboard / HUD -->
-      <div class="stats-bar">
-        <div class="stat-card">
-          <div class="stat-icon icon-blue"><i class="fa-solid fa-user"></i></div>
-          <div class="stat-details">
-            <span class="stat-title">Player</span>
-            <span id="hud-player-name" class="stat-number player-name">-</span>
+      <!-- Colorful & Modern Game HUD (Player Stats Bar) -->
+      <div class="stats-bar game-hud-grid">
+        
+        <!-- Stat 1: Player Profile -->
+        <div class="hud-card hud-player">
+          <div class="hud-icon-box icon-avatar">
+            <i class="fa-solid fa-user-astronaut"></i>
+          </div>
+          <div class="hud-data">
+            <span class="hud-label">PLAYER</span>
+            <span id="hud-player-name" class="hud-val player-name">-</span>
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon icon-yellow"><i class="fa-solid fa-star"></i></div>
-          <div class="stat-details">
-            <span class="stat-title">Current Score</span>
-            <span id="hud-score" class="stat-number score-number">0</span>
+        <!-- Stat 2: Current Score -->
+        <div class="hud-card hud-score">
+          <div class="hud-icon-box icon-star">
+            <i class="fa-solid fa-star"></i>
+          </div>
+          <div class="hud-data">
+            <span class="hud-label">SCORE</span>
+            <div class="hud-val-group">
+              <span id="hud-score" class="hud-val mono-val">0</span>
+              <span class="hud-unit">pts</span>
+            </div>
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon icon-orange"><i id="hud-streak-icon" class="fa-solid fa-fire"></i></div>
-          <div class="stat-details">
-            <span class="stat-title">Streak</span>
-            <span id="hud-streak" class="stat-number">0x</span>
+        <!-- Stat 3: Streak Multiplier -->
+        <div class="hud-card hud-streak">
+          <div class="hud-icon-box icon-flame">
+            <i id="hud-streak-icon" class="fa-solid fa-fire"></i>
+          </div>
+          <div class="hud-data">
+            <span class="hud-label">STREAK</span>
+            <span id="hud-streak" class="hud-val mono-val">0x</span>
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon icon-green"><i class="fa-solid fa-trophy"></i></div>
-          <div class="stat-details">
-            <span class="stat-title">High Score</span>
-            <span id="hud-high-score" class="stat-number">0</span>
+        <!-- Stat 4: High Score -->
+        <div class="hud-card hud-best">
+          <div class="hud-icon-box icon-trophy">
+            <i class="fa-solid fa-crown"></i>
+          </div>
+          <div class="hud-data">
+            <span class="hud-label">HIGH SCORE</span>
+            <div class="hud-val-group">
+              <span id="hud-high-score" class="hud-val mono-val">0</span>
+              <span class="hud-unit">pts</span>
+            </div>
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon icon-purple"><i class="fa-solid fa-gamepad"></i></div>
-          <div class="stat-details">
-            <span class="stat-title">Puzzles Played</span>
-            <span id="hud-rounds" class="stat-number">0</span>
+        <!-- Stat 5: Rounds Played -->
+        <div class="hud-card hud-rounds">
+          <div class="hud-icon-box icon-target">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
+          <div class="hud-data">
+            <span class="hud-label">ROUNDS</span>
+            <span id="hud-rounds" class="hud-val mono-val">0</span>
           </div>
         </div>
+
       </div>
 
-      <!-- Main Game Board -->
+      <!-- Main Game Board: Puzzle Stage (Left) & Playful Keypad (Right) -->
       <div class="game-board">
         
-        <!-- Left: Puzzle Display Area -->
+        <!-- Left: Puzzle Arena Card -->
         <div id="puzzle-card" class="card puzzle-card">
-          <div class="card-top-bar">
-            <span class="badge badge-info">
-              <i class="fa-solid fa-cloud"></i> <span id="puzzle-source-tag">Banana API Puzzle</span>
-            </span>
-            <span id="fallback-indicator" class="badge badge-warning hidden">
-              <i class="fa-solid fa-triangle-exclamation"></i> Offline Fallback
+          
+          <!-- Puzzle Card Top Bar -->
+          <div class="puzzle-top-bar">
+            <div class="puzzle-tag">
+              <i class="fa-solid fa-puzzle-piece"></i>
+              <span id="puzzle-source-tag">Math Puzzle</span>
+            </div>
+            <span id="fallback-indicator" class="fallback-pill hidden">
+              <i class="fa-solid fa-wifi"></i> Offline Puzzle
             </span>
           </div>
 
-          <div class="puzzle-view">
-            <!-- Loading Indicator -->
-            <div id="puzzle-loader" class="puzzle-loading-state">
-              <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-              <p>Loading new puzzle...</p>
+          <!-- Puzzle Visual Stage -->
+          <div class="puzzle-stage">
+            <!-- Loading State -->
+            <div id="puzzle-loader" class="puzzle-loader-box">
+              <div class="game-spinner">
+                <span class="spinner-banana">🍌</span>
+              </div>
+              <p class="loader-label">Loading next puzzle...</p>
             </div>
 
             <!-- Puzzle Image -->
-            <img 
-              id="puzzle-img" 
-              class="puzzle-image hidden" 
-              src="" 
-              alt="Math puzzle from API"
-            >
-          </div>
-
-          <!-- Answer Result Banner -->
-          <div id="feedback-banner" class="feedback-box hidden">
-            <span id="feedback-icon"></span>
-            <span id="feedback-text"></span>
-          </div>
-        </div>
-
-        <!-- Right: Calculator / Number Pad -->
-        <div class="card keypad-card">
-          <div class="card-header-compact">
-            <h3>Enter Answer</h3>
-            <p>Work out the missing number and choose below (0-9):</p>
-          </div>
-
-          <!-- Selected Answer Display -->
-          <div class="selected-display">
-            <span class="display-label">Selected Number:</span>
-            <div id="current-answer-box" class="display-box">
-              <span id="answer-placeholder">-</span>
-              <span id="answer-value" class="hidden"></span>
+            <div class="puzzle-img-container">
+              <img 
+                id="puzzle-img" 
+                class="puzzle-image hidden" 
+                src="" 
+                alt="Algebraic banana math puzzle"
+              >
             </div>
           </div>
 
-          <!-- Keypad Grid (0-9) -->
-          <div id="keypad-grid" class="keypad">
+          <!-- Dynamic Result Banner -->
+          <div id="feedback-banner" class="feedback-banner-box hidden">
+            <span id="feedback-icon" class="feedback-icon"></span>
+            <span id="feedback-text" class="feedback-text"></span>
+          </div>
+
+        </div>
+
+        <!-- Right: Chunky & Tactile Game Keypad -->
+        <div class="card keypad-card">
+          
+          <div class="keypad-header">
+            <h3>Enter Your Answer</h3>
+            <p>Work out the missing number and tap below:</p>
+          </div>
+
+          <!-- Selected Number Display Bubble -->
+          <div class="selection-display-bubble">
+            <span class="bubble-title">SELECTED NUMBER</span>
+            <div id="current-answer-box" class="answer-display-box">
+              <span id="answer-placeholder" class="placeholder-dot">?</span>
+              <span id="answer-value" class="selected-num mono-val hidden"></span>
+            </div>
+          </div>
+
+          <!-- Keypad Grid (Digits 1–9, 0) with 3D tactile buttons -->
+          <div id="keypad-grid" class="game-keypad">
             <button type="button" class="btn-key" data-digit="1">1</button>
             <button type="button" class="btn-key" data-digit="2">2</button>
             <button type="button" class="btn-key" data-digit="3">3</button>
@@ -207,155 +393,172 @@
             <button type="button" class="btn-key btn-zero" data-digit="0">0</button>
           </div>
 
-          <!-- Main Actions -->
-          <div class="keypad-actions">
-            <button type="button" id="submit-btn" class="btn btn-success" disabled>
-              <i class="fa-solid fa-check"></i> Submit
+          <!-- Action Buttons: Submit & Clear -->
+          <div class="keypad-action-row">
+            <button type="button" id="submit-btn" class="btn btn-submit-game" disabled>
+              <i class="fa-solid fa-check"></i>
+              <span>Submit Answer</span>
             </button>
-            <button type="button" id="clear-btn" class="btn btn-secondary" disabled>
-              <i class="fa-solid fa-xmark"></i> Clear
-            </button>
-          </div>
-
-          <!-- Extra Controls -->
-          <div class="extra-controls">
-            <button type="button" id="skip-btn" class="btn btn-link">
-              <i class="fa-solid fa-forward-step"></i> Skip Puzzle
-            </button>
-            <button type="button" id="reset-btn" class="btn btn-link">
-              <i class="fa-solid fa-rotate"></i> Reset Score
+            <button type="button" id="clear-btn" class="btn btn-clear-game" disabled>
+              <i class="fa-solid fa-xmark"></i>
+              <span>Clear</span>
             </button>
           </div>
 
-          <!-- Keyboard Help -->
-          <div class="keyboard-tip">
-            <small><i class="fa-regular fa-keyboard"></i> Tip: You can also use your keyboard keys (0-9) and Enter.</small>
+          <!-- Secondary Actions -->
+          <div class="game-sub-actions">
+            <button type="button" id="skip-btn" class="btn-link-action">
+              <i class="fa-solid fa-forward"></i>
+              <span>Skip Puzzle</span>
+            </button>
+            <button type="button" id="reset-btn" class="btn-link-action text-danger">
+              <i class="fa-solid fa-rotate-left"></i>
+              <span>Reset Score</span>
+            </button>
           </div>
+
+          <!-- Keyboard Helper Hint -->
+          <div class="keyboard-helper">
+            <i class="fa-regular fa-keyboard"></i>
+            <span>Press keys <strong>0–9</strong> and <strong>Enter</strong> on your keyboard!</span>
+          </div>
+
         </div>
 
       </div>
 
-      <!-- SQLite Enterprise Leaderboard & Audit Log -->
-      <div class="card data-card">
-        <div class="data-card-header">
-          <div class="tab-buttons">
+      <!-- Leaderboard & Recent Games Board -->
+      <div class="card data-card leaderboard-section-card">
+        
+        <div class="data-header">
+          <div class="game-tabs">
             <button type="button" id="tab-btn-leaderboard" class="tab-btn active">
-              <i class="fa-solid fa-trophy"></i> SQLite Global Leaderboard
+              <i class="fa-solid fa-trophy"></i>
+              <span>Global Leaderboard</span>
             </button>
             <button type="button" id="tab-btn-history" class="tab-btn">
-              <i class="fa-solid fa-clock-rotate-left"></i> My Audit Trail
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span>My Recent Games</span>
             </button>
           </div>
-          <div class="data-header-meta">
-            <span class="badge badge-db-small"><i class="fa-solid fa-database"></i> SQLite 3</span>
-            <button type="button" id="refresh-data-btn" class="btn btn-sm btn-link" title="Refresh SQLite data">
-              <i class="fa-solid fa-arrows-rotate"></i> Refresh
-            </button>
-          </div>
+
+          <button type="button" id="refresh-data-btn" class="btn btn-refresh" title="Refresh standings">
+            <i class="fa-solid fa-arrows-rotate"></i>
+            <span>Refresh</span>
+          </button>
         </div>
 
-        <!-- Leaderboard Tab -->
-        <div id="tab-content-leaderboard" class="data-table-container">
-          <table class="enterprise-table">
+        <!-- Tab 1: Leaderboard Table -->
+        <div id="tab-content-leaderboard" class="table-responsive">
+          <table class="game-table">
             <thead>
               <tr>
-                <th style="width: 70px;">Rank</th>
+                <th style="width: 80px;">Rank</th>
                 <th>Player</th>
-                <th>High Score</th>
-                <th>Best Streak</th>
-                <th>Total Rounds</th>
+                <th class="text-right">High Score</th>
+                <th class="text-center">Best Streak</th>
+                <th class="text-center">Rounds</th>
                 <th>Last Active</th>
               </tr>
             </thead>
             <tbody id="leaderboard-tbody">
               <tr>
                 <td colspan="6" class="text-center py-4 text-muted">
-                  <i class="fa-solid fa-spinner fa-spin"></i> Loading SQLite records...
+                  <i class="fa-solid fa-spinner fa-spin"></i> Loading leaderboard...
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- History Tab -->
-        <div id="tab-content-history" class="data-table-container hidden">
-          <table class="enterprise-table">
+        <!-- Tab 2: Player History Table -->
+        <div id="tab-content-history" class="table-responsive hidden">
+          <table class="game-table">
             <thead>
               <tr>
-                <th>Round #</th>
-                <th>Your Guess</th>
-                <th>Vault Solution</th>
+                <th style="width: 80px;">Round</th>
+                <th class="text-center">Your Guess</th>
+                <th class="text-center">Solution</th>
                 <th>Result</th>
-                <th>Points</th>
-                <th>Source</th>
-                <th>Logged At</th>
+                <th class="text-right">Points</th>
+                <th>Type</th>
+                <th>Time</th>
               </tr>
             </thead>
             <tbody id="history-tbody">
               <tr>
-                <td colspan="7" class="text-center py-4 text-muted">No rounds logged yet.</td>
+                <td colspan="7" class="text-center py-4 text-muted">No rounds played yet. Try a puzzle!</td>
               </tr>
             </tbody>
           </table>
         </div>
+
       </div>
 
     </section>
 
   </main>
 
-  <!-- Leaderboard Modal (Quick-view from anywhere) -->
-  <div id="leaderboard-modal" class="modal-overlay hidden">
+  <!-- Leaderboard Modal Dialog -->
+  <div id="leaderboard-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <div class="modal-header">
-        <div class="modal-title">
-          <i class="fa-solid fa-trophy text-yellow"></i>
-          <h3>SQLite Hall of Fame</h3>
+        <div class="modal-title-group">
+          <span class="modal-trophy">🏆</span>
+          <div>
+            <h3>Top Banana Champions</h3>
+            <p>Global player high score rankings</p>
+          </div>
         </div>
         <button type="button" id="modal-close-btn" class="btn-close" aria-label="Close modal">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
+
       <div class="modal-body">
-        <p class="modal-desc">Persistent high scores stored in the local SQLite database across server runs.</p>
-        <div class="data-table-container">
-          <table class="enterprise-table">
+        <div class="table-responsive">
+          <table class="game-table">
             <thead>
               <tr>
-                <th style="width: 70px;">Rank</th>
+                <th style="width: 80px;">Rank</th>
                 <th>Player</th>
-                <th>High Score</th>
-                <th>Best Streak</th>
-                <th>Rounds</th>
+                <th class="text-right">High Score</th>
+                <th class="text-center">Streak</th>
+                <th class="text-center">Rounds</th>
               </tr>
             </thead>
             <tbody id="modal-leaderboard-tbody">
               <tr>
-                <td colspan="5" class="text-center py-4 text-muted">Loading SQLite leaderboard...</td>
+                <td colspan="5" class="text-center py-4 text-muted">Loading rankings...</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-close-modal" onclick="document.getElementById('leaderboard-modal').classList.add('hidden')">Close</button>
+      </div>
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container" class="toast-wrapper"></div>
+  <!-- Dynamic Toast Container -->
+  <div id="toast-container" class="toast-wrapper" aria-live="polite"></div>
 
-  <!-- Footer -->
+  <!-- Game Footer -->
   <footer class="footer">
     <div class="footer-container">
-      <p>
-        <strong>CIS046-3 Software For Enterprise</strong> • Assignment 1 • University of Bedfordshire
-      </p>
-      <p class="footer-note">
-        External Puzzle API by <a href="https://marcconrad.com/uob/banana/doc.php" target="_blank" rel="noopener">Dr. Marc Conrad</a>.
-      </p>
+      <div class="footer-info">
+        <span>🍌 <strong>Banana Math Challenge</strong> — CIS046-3 Assignment 1</span>
+        <span class="footer-sub">University of Bedfordshire</span>
+      </div>
+      <div class="footer-links">
+        <span>Puzzle API by <a href="https://marcconrad.com/uob/banana/doc.php" target="_blank" rel="noopener">Dr. Marc Conrad</a></span>
+      </div>
     </div>
   </footer>
 
-  <!-- Client Script -->
+  <!-- Frontend Logic -->
   <script src="app.js"></script>
 </body>
 </html>
