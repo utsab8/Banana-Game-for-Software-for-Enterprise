@@ -26,6 +26,7 @@ let db = null;
  */
 function run(sql, params = []) {
   return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error('SQLite database is not initialized. Call initDatabase() first.'));
     db.run(sql, params, function (err) {
       if (err) return reject(err);
       resolve({ lastID: this.lastID, changes: this.changes });
@@ -38,6 +39,7 @@ function run(sql, params = []) {
  */
 function get(sql, params = []) {
   return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error('SQLite database is not initialized. Call initDatabase() first.'));
     db.get(sql, params, (err, row) => {
       if (err) return reject(err);
       resolve(row);
@@ -50,6 +52,7 @@ function get(sql, params = []) {
  */
 function all(sql, params = []) {
   return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error('SQLite database is not initialized. Call initDatabase() first.'));
     db.all(sql, params, (err, rows) => {
       if (err) return reject(err);
       resolve(rows);
@@ -150,6 +153,7 @@ async function initDatabase() {
             is_correct INTEGER NOT NULL,
             points_awarded INTEGER NOT NULL,
             is_fallback INTEGER NOT NULL DEFAULT 0,
+            mode TEXT DEFAULT 'medium',
             played_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
           );
@@ -197,6 +201,26 @@ async function registerUser({ username, email, password }) {
      FROM users WHERE id = ?`, 
     [result.lastID]
   );
+}
+
+/**
+ * Upgrade an existing unauthenticated guest/nickname account to a full password-protected account
+ * Preserves existing score, streak, high score, rounds played, avatar, and achievements
+ * @param {number} userId 
+ * @param {object} param1 
+ */
+async function upgradeUserAccount(userId, { email, password }) {
+  const salt = await bcrypt.genSalt(10);
+  const passwordHash = await bcrypt.hash(password, salt);
+
+  await run(
+    `UPDATE users 
+     SET email = ?, password_hash = ?, last_active_at = CURRENT_TIMESTAMP 
+     WHERE id = ?`,
+    [email, passwordHash, userId]
+  );
+
+  return await getUserById(userId);
 }
 
 /**
@@ -570,6 +594,7 @@ function closeDatabase() {
 module.exports = {
   initDatabase,
   registerUser,
+  upgradeUserAccount,
   findUserByIdentifier,
   findUserByEmail,
   findUserByUsername,

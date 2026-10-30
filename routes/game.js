@@ -83,22 +83,30 @@ router.get('/new-puzzle', requireAuth, async (req, res) => {
     req.session.puzzleIssuedAt = Date.now();
     req.session.currentMode = currentMode;
 
-    return res.json({
-      success: true,
-      question: puzzle.question,
-      isFallback: puzzle.isFallback,
-      mode: currentMode,
-      timeLimit: modeConfig.timeLimit,
-      basePoints: modeConfig.basePoints,
-      penalty: modeConfig.penalty,
-      user: {
-        id: req.session.user.id,
-        username: req.session.user.username,
-        score: req.session.user.score,
-        streak: req.session.user.streak,
-        highScore: req.session.user.highScore,
-        roundsPlayed: req.session.user.roundsPlayed
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        console.error('[Session Save Error - New Puzzle]', saveErr);
+        return res.status(500).json({ success: false, error: 'Failed to initialize puzzle session.' });
       }
+      return res.json({
+        success: true,
+        question: puzzle.question,
+        isFallback: puzzle.isFallback,
+        mode: currentMode,
+        timeLimit: modeConfig.timeLimit,
+        basePoints: modeConfig.basePoints,
+        penalty: modeConfig.penalty,
+        user: {
+          id: req.session.user.id,
+          username: req.session.user.username,
+          avatar: req.session.user.avatar || '🍌',
+          title: req.session.user.title || 'Banana Rookie',
+          score: req.session.user.score,
+          streak: req.session.user.streak,
+          highScore: req.session.user.highScore,
+          roundsPlayed: req.session.user.roundsPlayed
+        }
+      });
     });
   } catch (error) {
     console.error('[Game Engine Error] Failed to generate puzzle:', error);
@@ -280,26 +288,31 @@ router.post('/submit-answer', requireAuth, async (req, res) => {
     console.warn('[Achievements Evaluation Warning]', achErr.message);
   }
 
-  return res.json({
-    success: true,
-    correct: isCorrect,
-    isTimeout: Boolean(isTimeout),
-    userAnswer: parsedAnswer,
-    solution: expectedSolution,
-    pointsAwarded,
-    mode: modeKey,
-    message: feedbackMessage,
-    newAchievements,
-    user: {
-      id: user.id,
-      username: user.username,
-      avatar: user.avatar || '🍌',
-      title: user.title || 'Banana Rookie',
-      score: user.score,
-      streak: user.streak,
-      highScore: user.highScore,
-      roundsPlayed: user.roundsPlayed
+  req.session.save((saveErr) => {
+    if (saveErr) {
+      console.error('[Session Save Error - Submit Answer]', saveErr);
     }
+    return res.json({
+      success: true,
+      correct: isCorrect,
+      isTimeout: Boolean(isTimeout),
+      userAnswer: parsedAnswer,
+      solution: expectedSolution,
+      pointsAwarded,
+      mode: modeKey,
+      message: feedbackMessage,
+      newAchievements,
+      user: {
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar || '🍌',
+        title: user.title || 'Banana Rookie',
+        score: user.score,
+        streak: user.streak,
+        highScore: user.highScore,
+        roundsPlayed: user.roundsPlayed
+      }
+    });
   });
 });
 
@@ -321,16 +334,24 @@ router.post('/reset', requireAuth, async (req, res) => {
     console.error('[SQLite Reset Error]', dbErr.message);
   }
 
-  return res.json({
-    success: true,
-    message: 'Game telemetry reset successfully.',
-    user: {
-      username: user.username,
-      score: user.score,
-      streak: user.streak,
-      highScore: user.highScore,
-      roundsPlayed: user.roundsPlayed
+  req.session.save((saveErr) => {
+    if (saveErr) {
+      console.error('[Session Save Error - Reset]', saveErr);
     }
+    return res.json({
+      success: true,
+      message: 'Game telemetry reset successfully.',
+      user: {
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar || '🍌',
+        title: user.title || 'Banana Rookie',
+        score: user.score,
+        streak: user.streak,
+        highScore: user.highScore,
+        roundsPlayed: user.roundsPlayed
+      }
+    });
   });
 });
 
@@ -373,3 +394,4 @@ router.get('/history', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+

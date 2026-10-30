@@ -51,36 +51,46 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    // Check if username already exists
-    const existingUsername = await db.findUserByUsername(sanitizedUsername);
-    if (existingUsername) {
-      return res.status(409).json({ success: false, error: `Username '${sanitizedUsername}' is already taken.` });
-    }
-
     // Check if email already exists
     const existingEmail = await db.findUserByEmail(sanitizedEmail);
     if (existingEmail) {
       return res.status(409).json({ success: false, error: 'This email is already registered. Please sign in instead.' });
     }
 
-    // Create user with bcrypt password hash
-    const newUser = await db.registerUser({
-      username: sanitizedUsername,
-      email: sanitizedEmail,
-      password
-    });
+    // Check if username already exists
+    const existingUsername = await db.findUserByUsername(sanitizedUsername);
+    let userRecord = null;
+
+    if (existingUsername) {
+      // If the account already has a password, reject
+      if (existingUsername.password_hash) {
+        return res.status(409).json({ success: false, error: `Username '${sanitizedUsername}' is already taken. Please sign in instead.` });
+      }
+      // If the account only existed as an unauthenticated guest/nickname, upgrade it!
+      userRecord = await db.upgradeUserAccount(existingUsername.id, {
+        email: sanitizedEmail,
+        password
+      });
+    } else {
+      // Create new user with bcrypt password hash
+      userRecord = await db.registerUser({
+        username: sanitizedUsername,
+        email: sanitizedEmail,
+        password
+      });
+    }
 
     // Establish authenticated server-side session
     req.session.user = {
-      id: newUser.id,
-      username: newUser.username,
-      avatar: newUser.avatar || '🍌',
-      title: newUser.title || 'Banana Rookie',
-      email: newUser.email,
-      score: 0,
-      streak: 0,
-      highScore: 0,
-      roundsPlayed: 0,
+      id: userRecord.id,
+      username: userRecord.username,
+      avatar: userRecord.avatar || '🍌',
+      title: userRecord.title || 'Banana Rookie',
+      email: userRecord.email,
+      score: userRecord.score || 0,
+      streak: userRecord.streak || 0,
+      highScore: userRecord.high_score || 0,
+      roundsPlayed: userRecord.rounds_played || 0,
       sessionStarted: new Date().toISOString()
     };
     req.session.currentSolution = null;
@@ -93,7 +103,7 @@ router.post('/register', async (req, res) => {
       }
       return res.status(201).json({
         success: true,
-        message: `Account registered successfully! Welcome, ${newUser.username}.`,
+        message: `Account registered successfully! Welcome, ${userRecord.username}.`,
         user: req.session.user
       });
     });
@@ -232,3 +242,4 @@ router.post('/logout', (req, res) => {
 });
 
 module.exports = router;
+

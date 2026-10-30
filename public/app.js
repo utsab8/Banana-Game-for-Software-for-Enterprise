@@ -125,7 +125,82 @@ const DOM = {
   modalPreviewHighscore: document.getElementById('modal-preview-highscore'),
   modalPreviewTrophies: document.getElementById('modal-preview-trophies'),
   avatarOptionsGrid: document.getElementById('avatar-options-grid'),
-  titlesOptionsList: document.getElementById('titles-options-list')
+  titlesOptionsList: document.getElementById('titles-options-list'),
+
+  // Sound Control
+  soundToggleBtn: document.getElementById('sound-toggle-btn'),
+  soundIcon: document.getElementById('sound-icon')
+};
+
+// -----------------------------------------------------------------------------
+// Web Audio API Sound Synthesizer (Theme 2: Event-Driven Auditory Feedback)
+// Zero external audio asset dependencies - pure procedural audio synthesis
+// -----------------------------------------------------------------------------
+const SoundFX = {
+  audioCtx: null,
+  isMuted: false,
+
+  init() {
+    if (!this.audioCtx) {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) {
+        this.audioCtx = new AudioCtxClass();
+      }
+    }
+    if (this.audioCtx && this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
+  },
+
+  playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+    if (this.isMuted) return;
+    try {
+      this.init();
+      if (!this.audioCtx) return;
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+      gain.gain.setValueAtTime(gainVal, this.audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+      osc.start();
+      osc.stop(this.audioCtx.currentTime + duration);
+    } catch (e) {
+      // Handled silently if autoplay restricted
+    }
+  },
+
+  click() {
+    this.playTone(600, 'triangle', 0.04, 0.05);
+  },
+
+  correct() {
+    // Joyful melodic arpeggio (C5 -> E5 -> G5)
+    this.playTone(523.25, 'sine', 0.1, 0.12);
+    setTimeout(() => this.playTone(659.25, 'sine', 0.12, 0.12), 80);
+    setTimeout(() => this.playTone(783.99, 'sine', 0.25, 0.14), 160);
+  },
+
+  wrong() {
+    // Low error buzzer
+    this.playTone(220, 'sawtooth', 0.15, 0.1);
+    setTimeout(() => this.playTone(180, 'sawtooth', 0.25, 0.1), 120);
+  },
+
+  timeout() {
+    // Alarm warning pulse
+    this.playTone(330, 'square', 0.12, 0.08);
+    setTimeout(() => this.playTone(260, 'square', 0.2, 0.08), 100);
+  },
+
+  achievement() {
+    // Triumphant fanfare (C5 -> G5 -> C6)
+    this.playTone(523.25, 'sine', 0.12, 0.14);
+    setTimeout(() => this.playTone(783.99, 'sine', 0.14, 0.15), 100);
+    setTimeout(() => this.playTone(1046.50, 'triangle', 0.35, 0.18), 220);
+  }
 };
 
 // -----------------------------------------------------------------------------
@@ -229,6 +304,7 @@ function selectDigit(digit) {
   state.selectedAnswer = digit;
 
   if (digit !== null) {
+    SoundFX.click();
     DOM.answerPlaceholder.classList.add('hidden');
     DOM.answerValue.textContent = digit;
     DOM.answerValue.classList.remove('hidden');
@@ -624,6 +700,7 @@ async function handleTimeout() {
   state.isSubmitting = true;
   DOM.submitBtn.disabled = true;
 
+  SoundFX.timeout();
   showToast("⏰ Time's up!", 'error', 2500);
 
   const res = await api('/api/game/submit-answer', {
@@ -796,10 +873,15 @@ async function handleAnswerSubmit() {
 
   // Trigger celebration toasts if new achievements were unlocked!
   if (Array.isArray(newAchievements) && newAchievements.length > 0) {
+    SoundFX.achievement();
     newAchievements.forEach((ach) => {
       showToast(`🏆 Trophy Unlocked: ${ach.icon} ${ach.name}!`, 'success', 5500);
     });
     loadAchievements();
+  } else if (correct) {
+    SoundFX.correct();
+  } else {
+    SoundFX.wrong();
   }
 
   // Refresh SQLite persistence views
@@ -1256,6 +1338,17 @@ function initEvents() {
         selectedAvatarInModal = btn.dataset.avatar;
         if (DOM.modalPreviewAvatar) DOM.modalPreviewAvatar.textContent = selectedAvatarInModal;
       });
+    });
+  }
+
+  // Sound Effects Toggle Handler
+  if (DOM.soundToggleBtn && DOM.soundIcon) {
+    DOM.soundToggleBtn.addEventListener('click', () => {
+      SoundFX.isMuted = !SoundFX.isMuted;
+      DOM.soundToggleBtn.classList.toggle('muted', SoundFX.isMuted);
+      DOM.soundIcon.className = SoundFX.isMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+      showToast(SoundFX.isMuted ? 'Sound FX muted.' : 'Sound FX enabled!', 'info', 1500);
+      if (!SoundFX.isMuted) SoundFX.click();
     });
   }
 
