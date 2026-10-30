@@ -222,6 +222,8 @@ app.post('/api/auth/register', async (req, res) => {
     req.session.user = {
       id: newUser.id,
       username: newUser.username,
+      avatar: newUser.avatar || '🍌',
+      title: newUser.title || 'Banana Rookie',
       email: newUser.email,
       score: 0,
       streak: 0,
@@ -231,10 +233,18 @@ app.post('/api/auth/register', async (req, res) => {
     };
     req.session.currentSolution = null;
 
-    return res.status(201).json({
-      success: true,
-      message: `Account registered successfully! Welcome, ${newUser.username}.`,
-      user: req.session.user
+    // Explicitly persist session BEFORE responding to prevent race condition
+    // on cold start where client's follow-up request arrives before session is saved.
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        console.error('[Session Save Error - Register]', saveErr);
+        return res.status(500).json({ success: false, error: 'Session could not be established. Please try again.' });
+      }
+      return res.status(201).json({
+        success: true,
+        message: `Account registered successfully! Welcome, ${newUser.username}.`,
+        user: req.session.user
+      });
     });
   } catch (error) {
     console.error('[SQLite Registration Error]', error);
@@ -275,6 +285,8 @@ app.post('/api/auth/login', async (req, res) => {
       req.session.user = {
         id: dbUser.id,
         username: dbUser.username,
+        avatar: dbUser.avatar || '🍌',
+        title: dbUser.title || 'Banana Rookie',
         email: dbUser.email || null,
         score: dbUser.score || 0,
         streak: dbUser.streak || 0,
@@ -284,11 +296,19 @@ app.post('/api/auth/login', async (req, res) => {
       };
       req.session.currentSolution = null;
 
-      return res.json({
-        success: true,
-        message: `Welcome back, ${dbUser.username}!`,
-        user: req.session.user
+      // Explicitly persist session BEFORE responding (prevents cold-start race condition)
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('[Session Save Error - Login]', saveErr);
+          return res.status(500).json({ success: false, error: 'Session could not be established. Please try again.' });
+        }
+        return res.json({
+          success: true,
+          message: `Welcome back, ${dbUser.username}!`,
+          user: req.session.user
+        });
       });
+      return; // session.save is async; response sent inside callback
     }
 
     // Case 2: No password provided (Instant Virtual Identity Nickname mode)
@@ -298,6 +318,8 @@ app.post('/api/auth/login', async (req, res) => {
     req.session.user = {
       id: dbUser.id,
       username: dbUser.username,
+      avatar: dbUser.avatar || '🍌',
+      title: dbUser.title || 'Banana Rookie',
       email: dbUser.email || null,
       score: dbUser.score || 0,
       streak: dbUser.streak || 0,
@@ -307,10 +329,17 @@ app.post('/api/auth/login', async (req, res) => {
     };
     req.session.currentSolution = null;
 
-    return res.json({
-      success: true,
-      message: `Virtual identity '${dbUser.username}' loaded from SQLite successfully.`,
-      user: req.session.user
+    // Explicitly persist session BEFORE responding (prevents cold-start race condition)
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        console.error('[Session Save Error - Guest Login]', saveErr);
+        return res.status(500).json({ success: false, error: 'Session could not be established. Please try again.' });
+      }
+      return res.json({
+        success: true,
+        message: `Virtual identity '${dbUser.username}' loaded from SQLite successfully.`,
+        user: req.session.user
+      });
     });
   } catch (error) {
     console.error('[SQLite Auth Error]', error);
@@ -351,6 +380,87 @@ app.post('/api/auth/logout', (req, res) => {
   }
 });
 
+/**
+ * POST /api/user/profile
+ * Updates the user's avatar emoji and equipped title
+ */
+app.post('/api/user/profile', requireAuth, async (req, res) => {
+  const { avatar, title } = req.body;
+  const userId = req.session.user.id;
+
+  try {
+    const updatedUser = await db.updateUserProfile(userId, { avatar, title });
+    if (avatar) req.session.user.avatar = avatar;
+    if (title) req.session.user.title = title;
+
+    req.session.save((err) => {
+      if (err) {
+        console.error('[Session Error - Profile]', err);
+        return res.status(500).json({ success: false, error: 'Failed to update session.' });
+      }
+      return res.json({
+        success: true,
+        message: 'Profile updated successfully!',
+        user: req.session.user
+      });
+    });
+  } catch (error) {
+    console.error('[Profile Update Error]', error);
+    return res.status(500).json({ success: false, error: 'Database update failed.' });
+  }
+});
+
+/**
+ * GET /api/user/achievements
+ * Retrieves list of milestones & unlock status for current user
+ */
+app.get('/api/user/achievements', requireAuth, async (req, res) => {
+  try {
+    const achievements = await db.getUserAchievements(req.session.user.id);
+    return res.json({
+      success: true,
+      achievements
+    });
+  } catch (error) {
+    console.error('[Achievements Fetch Error]', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch achievements.' });
+  }
+});
+
+// ==============================================================================
+// 4.1 GAME DIFFICULTY MODES & MECHANICS
+// Demonstrates Enterprise Game Design: Difficulty balancing, timers, & risk/reward
+// ==============================================================================
+const GAME_MODES = {
+  easy: {
+    key: 'easy',
+    name: 'Easy',
+    timeLimit: 0, // No countdown timer
+    basePoints: 10,
+    streakMultiplier: 1.0,
+    penalty: 0,
+    description: 'Casual mode without timer pressure'
+  },
+  medium: {
+    key: 'medium',
+    name: 'Medium',
+    timeLimit: 25, // 25 seconds
+    basePoints: 20,
+    streakMultiplier: 1.5,
+    penalty: 0,
+    description: 'Standard 25-second challenge'
+  },
+  hard: {
+    key: 'hard',
+    name: 'Hard',
+    timeLimit: 12, // 12 seconds
+    basePoints: 40,
+    streakMultiplier: 2.0,
+    penalty: 5,
+    description: 'Intense 12-second speed mode with 2x points and -5 penalty'
+  }
+};
+
 // ==============================================================================
 // 5. REST API ROUTES: GAME ENGINE & ANTI-CHEAT VALIDATION
 // Demonstrates 3-Tier Security: The puzzle solution is strictly vaulted in session
@@ -362,6 +472,14 @@ app.post('/api/auth/logout', (req, res) => {
  */
 app.get('/api/game/new-puzzle', requireAuth, async (req, res) => {
   try {
+    // Determine active difficulty mode (URL query param or session store)
+    const requestedMode = (req.query.mode || '').toLowerCase();
+    if (requestedMode && GAME_MODES[requestedMode]) {
+      req.session.currentMode = requestedMode;
+    }
+    const currentMode = req.session.currentMode || 'medium';
+    const modeConfig = GAME_MODES[currentMode] || GAME_MODES.medium;
+
     const puzzle = await fetchBananaPuzzle();
 
     // CRITICAL SECURITY MECHANISM:
@@ -370,12 +488,19 @@ app.get('/api/game/new-puzzle', requireAuth, async (req, res) => {
     req.session.currentSolution = puzzle.solution;
     req.session.currentIsFallback = puzzle.isFallback;
     req.session.puzzleIssuedAt = Date.now();
+    req.session.currentMode = currentMode;
 
     return res.json({
       success: true,
       question: puzzle.question,
       isFallback: puzzle.isFallback,
+      mode: currentMode,
+      timeLimit: modeConfig.timeLimit,
+      basePoints: modeConfig.basePoints,
+      penalty: modeConfig.penalty,
       user: {
+        id: req.session.user.id,
+        username: req.session.user.username,
         score: req.session.user.score,
         streak: req.session.user.streak,
         highScore: req.session.user.highScore,
@@ -395,8 +520,33 @@ app.get('/api/game/new-puzzle', requireAuth, async (req, res) => {
  * POST /api/game/submit-answer
  * Evaluates the player's guess against the server-vaulted solution and logs to SQLite
  */
+/**
+ * POST /api/game/mode
+ * Sets the active game difficulty mode in user session
+ */
+app.post('/api/game/mode', requireAuth, (req, res) => {
+  const { mode } = req.body;
+  const modeKey = (mode || '').toLowerCase();
+  if (!GAME_MODES[modeKey]) {
+    return res.status(400).json({ success: false, error: 'Invalid mode. Select easy, medium, or hard.' });
+  }
+
+  req.session.currentMode = modeKey;
+  req.session.save((err) => {
+    if (err) {
+      console.error('[Session Error - Mode]', err);
+      return res.status(500).json({ success: false, error: 'Could not update mode in session.' });
+    }
+    return res.json({
+      success: true,
+      mode: modeKey,
+      config: GAME_MODES[modeKey]
+    });
+  });
+});
+
 app.post('/api/game/submit-answer', requireAuth, async (req, res) => {
-  const { answer } = req.body;
+  const { answer, isTimeout, mode: clientMode } = req.body;
 
   // Validate active puzzle existence
   if (req.session.currentSolution === null || req.session.currentSolution === undefined) {
@@ -406,18 +556,33 @@ app.post('/api/game/submit-answer', requireAuth, async (req, res) => {
     });
   }
 
-  // Parse and validate submitted answer (must be single digit integer 0-9)
-  const parsedAnswer = parseInt(answer, 10);
-  if (isNaN(parsedAnswer) || parsedAnswer < 0 || parsedAnswer > 9) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid input. Answer must be an integer between 0 and 9.'
-    });
-  }
-
   const expectedSolution = req.session.currentSolution;
-  const isCorrect = parsedAnswer === expectedSolution;
   const isFallback = Boolean(req.session.currentIsFallback);
+
+  // Determine active mode
+  const modeKey = (clientMode && GAME_MODES[clientMode.toLowerCase()])
+    ? clientMode.toLowerCase()
+    : (req.session.currentMode || 'medium');
+  const modeConfig = GAME_MODES[modeKey] || GAME_MODES.medium;
+  req.session.currentMode = modeKey;
+
+  // Parse and validate submitted answer (or handle timer timeout)
+  let parsedAnswer = null;
+  let isCorrect = false;
+
+  if (isTimeout) {
+    parsedAnswer = -1; // -1 denotes a round lost to countdown timeout
+    isCorrect = false;
+  } else {
+    parsedAnswer = parseInt(answer, 10);
+    if (isNaN(parsedAnswer) || parsedAnswer < 0 || parsedAnswer > 9) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid input. Answer must be an integer between 0 and 9.'
+      });
+    }
+    isCorrect = parsedAnswer === expectedSolution;
+  }
 
   // Update user session telemetry
   const user = req.session.user;
@@ -428,17 +593,49 @@ app.post('/api/game/submit-answer', requireAuth, async (req, res) => {
 
   if (isCorrect) {
     user.streak += 1;
-    pointsAwarded = 10 * user.streak; // Streak multiplier bonus
+
+    // Difficulty-adjusted dynamic scoring:
+    // Easy: base 10 * streak
+    // Medium: base 20 + ((streak - 1) * 10)
+    // Hard: base 40 * streak
+    if (modeKey === 'easy') {
+      pointsAwarded = 10 * user.streak;
+    } else if (modeKey === 'medium') {
+      pointsAwarded = Math.round(20 * (1 + (user.streak - 1) * 0.5));
+    } else {
+      pointsAwarded = 40 * user.streak;
+    }
+
     user.score += pointsAwarded;
     if (user.score > user.highScore) {
       user.highScore = user.score;
     }
+
     feedbackMessage = user.streak > 1 
-      ? `Correct! Excellent deduction! Streak Bonus: ${user.streak}x (+${pointsAwarded} pts)`
-      : `Correct! Well done! (+${pointsAwarded} pts)`;
+      ? `Correct! Excellent deduction! [${modeConfig.name}] Streak Bonus: ${user.streak}x (+${pointsAwarded} pts)`
+      : `Correct! Well done! [${modeConfig.name}] (+${pointsAwarded} pts)`;
   } else {
-    user.streak = 0; // Reset streak on incorrect answer
-    feedbackMessage = `Incorrect. You guessed ${parsedAnswer}, but the solution was ${expectedSolution}.`;
+    user.streak = 0; // Reset streak on incorrect or timeout
+
+    if (isTimeout) {
+      if (modeKey === 'hard' && modeConfig.penalty > 0) {
+        const penalty = Math.min(user.score, modeConfig.penalty);
+        user.score -= penalty;
+        pointsAwarded = -penalty;
+        feedbackMessage = `⏰ Time's up! Penalty: -${penalty} pts. The solution was ${expectedSolution}.`;
+      } else {
+        feedbackMessage = `⏰ Time's up! You ran out of time. The solution was ${expectedSolution}.`;
+      }
+    } else {
+      if (modeKey === 'hard' && modeConfig.penalty > 0) {
+        const penalty = Math.min(user.score, modeConfig.penalty);
+        user.score -= penalty;
+        pointsAwarded = -penalty;
+        feedbackMessage = `Incorrect (-${penalty} pts). You guessed ${parsedAnswer}, but the solution was ${expectedSolution}.`;
+      } else {
+        feedbackMessage = `Incorrect. You guessed ${parsedAnswer}, but the solution was ${expectedSolution}.`;
+      }
+    }
   }
 
   // Anti-Replay Security: Wipe solution from session after evaluation
@@ -461,21 +658,50 @@ app.post('/api/game/submit-answer', requireAuth, async (req, res) => {
         solution: expectedSolution,
         isCorrect,
         pointsAwarded,
-        isFallback
+        isFallback,
+        mode: modeKey
       });
     }
   } catch (dbErr) {
     console.error('[SQLite Write Error] Failed to persist game telemetry:', dbErr.message);
   }
 
+  // Check for newly unlocked achievements
+  let newAchievements = [];
+  try {
+    if (user.id) {
+      newAchievements = await db.checkAndUnlockAchievements(
+        user.id,
+        {
+          streak: user.streak,
+          highScore: user.highScore,
+          roundsPlayed: user.roundsPlayed
+        },
+        {
+          isCorrect,
+          mode: modeKey
+        }
+      );
+    }
+  } catch (achErr) {
+    console.warn('[Achievements Evaluation Warning]', achErr.message);
+  }
+
   return res.json({
     success: true,
     correct: isCorrect,
+    isTimeout: Boolean(isTimeout),
     userAnswer: parsedAnswer,
     solution: expectedSolution,
     pointsAwarded,
+    mode: modeKey,
     message: feedbackMessage,
+    newAchievements,
     user: {
+      id: user.id,
+      username: user.username,
+      avatar: user.avatar || '🍌',
+      title: user.title || 'Banana Rookie',
       score: user.score,
       streak: user.streak,
       highScore: user.highScore,
@@ -525,11 +751,14 @@ app.get('/api/game/leaderboard', async (req, res) => {
     const leaderboard = await db.getLeaderboard(limit);
     return res.json({
       success: true,
-      leaderboard
+      leaderboard: Array.isArray(leaderboard) ? leaderboard : []
     });
   } catch (error) {
     console.error('[SQLite Leaderboard Error]', error);
-    return res.status(500).json({ success: false, error: 'Failed to retrieve leaderboard from database.' });
+    return res.json({
+      success: true,
+      leaderboard: []
+    });
   }
 });
 

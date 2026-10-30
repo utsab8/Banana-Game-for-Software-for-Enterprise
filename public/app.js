@@ -14,7 +14,11 @@ const state = {
   user: null,               // Holds the current player info (username, score, streak)
   selectedAnswer: null,     // Currently selected digit (0-9)
   isLoading: false,         // Flag to prevent spamming while fetching puzzle
-  isSubmitting: false       // Flag to prevent double submissions
+  isSubmitting: false,      // Flag to prevent double submissions
+  currentMode: 'medium',    // Active difficulty mode: 'easy' | 'medium' | 'hard'
+  timerInterval: null,      // Active countdown interval reference
+  timerSecondsLeft: 25,     // Remaining seconds on active puzzle
+  timerTotalSeconds: 25     // Total duration of current round
 };
 
 // Cached DOM Elements
@@ -91,7 +95,37 @@ const DOM = {
   tabContentHistory: document.getElementById('tab-content-history'),
   refreshDataBtn: document.getElementById('refresh-data-btn'),
   leaderboardTbody: document.getElementById('leaderboard-tbody'),
-  historyTbody: document.getElementById('history-tbody')
+  historyTbody: document.getElementById('history-tbody'),
+
+  // Difficulty Mode & Countdown Timer
+  modePills: document.querySelectorAll('.mode-pill'),
+  puzzleTimerContainer: document.getElementById('puzzle-timer-container'),
+  timerSeconds: document.getElementById('timer-seconds'),
+  timerProgressBar: document.getElementById('timer-progress-bar'),
+
+  // Virtual Identity: Player Profile & Achievements
+  userAvatarDisplay: document.getElementById('user-avatar-display'),
+  sessionTitleText: document.getElementById('session-title-text'),
+  hudAvatarDisplay: document.getElementById('hud-avatar-display'),
+  hudPlayerTitle: document.getElementById('hud-player-title'),
+  hudProfileTrigger: document.getElementById('hud-profile-trigger'),
+  tabBtnAchievements: document.getElementById('tab-btn-achievements'),
+  tabContentAchievements: document.getElementById('tab-content-achievements'),
+  achievementsTabBadge: document.getElementById('achievements-tab-badge'),
+  achievementsGrid: document.getElementById('achievements-grid'),
+  achievementsProgressText: document.getElementById('achievements-progress-text'),
+
+  // Profile Modal Elements
+  profileModal: document.getElementById('profile-modal'),
+  profileModalCloseBtn: document.getElementById('profile-modal-close-btn'),
+  saveProfileBtn: document.getElementById('save-profile-btn'),
+  modalPreviewAvatar: document.getElementById('modal-preview-avatar'),
+  modalPreviewUsername: document.getElementById('modal-preview-username'),
+  modalPreviewTitle: document.getElementById('modal-preview-title'),
+  modalPreviewHighscore: document.getElementById('modal-preview-highscore'),
+  modalPreviewTrophies: document.getElementById('modal-preview-trophies'),
+  avatarOptionsGrid: document.getElementById('avatar-options-grid'),
+  titlesOptionsList: document.getElementById('titles-options-list')
 };
 
 // -----------------------------------------------------------------------------
@@ -153,6 +187,14 @@ function updateHUD(user) {
   DOM.hudStreak.textContent = `${user.streak}x`;
   DOM.hudHighScore.textContent = user.highScore;
   DOM.hudRounds.textContent = user.roundsPlayed;
+
+  const avatar = user.avatar || '🍌';
+  const title = user.title || 'Banana Rookie';
+
+  if (DOM.hudAvatarDisplay) DOM.hudAvatarDisplay.textContent = avatar;
+  if (DOM.hudPlayerTitle) DOM.hudPlayerTitle.textContent = title;
+  if (DOM.userAvatarDisplay) DOM.userAvatarDisplay.textContent = avatar;
+  if (DOM.sessionTitleText) DOM.sessionTitleText.textContent = title;
 }
 
 function switchView(view) {
@@ -163,6 +205,8 @@ function switchView(view) {
 
     DOM.sessionBadge.className = 'player-chip active';
     DOM.sessionStatusText.textContent = state.user.username;
+    if (DOM.userAvatarDisplay) DOM.userAvatarDisplay.textContent = state.user.avatar || '🍌';
+    if (DOM.sessionTitleText) DOM.sessionTitleText.textContent = state.user.title || 'Banana Rookie';
   } else {
     DOM.gameSection.classList.add('hidden');
     DOM.authSection.classList.remove('hidden');
@@ -170,6 +214,8 @@ function switchView(view) {
 
     DOM.sessionBadge.className = 'player-chip guest';
     DOM.sessionStatusText.textContent = 'Not Logged In';
+    if (DOM.userAvatarDisplay) DOM.userAvatarDisplay.textContent = '🍌';
+    if (DOM.sessionTitleText) DOM.sessionTitleText.textContent = 'Banana Rookie';
     if (DOM.loginIdentifier) {
       DOM.loginIdentifier.value = '';
     }
@@ -233,12 +279,16 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-async function loadLeaderboard() {
+async function loadLeaderboard(retryCount = 0) {
   const res = await api('/api/game/leaderboard');
   if (!res.ok || !res.data || !res.data.leaderboard) {
-    const errHtml = `<tr><td colspan="6" class="text-center py-4 text-muted">Unable to load SQLite leaderboard.</td></tr>`;
+    if (retryCount < 2) {
+      setTimeout(() => loadLeaderboard(retryCount + 1), 1200);
+      return;
+    }
+    const errHtml = `<tr><td colspan="6" class="text-center py-4 text-muted">Leaderboard sync in progress... <button type="button" class="btn-link-highlight" onclick="loadLeaderboard()" style="margin-left: 6px; text-decoration: underline; cursor: pointer;">Retry</button></td></tr>`;
     if (DOM.leaderboardTbody) DOM.leaderboardTbody.innerHTML = errHtml;
-    if (DOM.modalLeaderboardTbody) DOM.modalLeaderboardTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Unable to load SQLite leaderboard.</td></tr>`;
+    if (DOM.modalLeaderboardTbody) DOM.modalLeaderboardTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Leaderboard sync in progress... <button type="button" class="btn-link-highlight" onclick="loadLeaderboard()" style="margin-left: 6px; text-decoration: underline; cursor: pointer;">Retry</button></td></tr>`;
     return;
   }
 
@@ -250,17 +300,17 @@ async function loadLeaderboard() {
     return;
   }
 
-    const rowsHtml = list.map((player, idx) => {
+  const rowsHtml = list.map((player, idx) => {
     const rank = idx + 1;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
-    const isCurrent = state.user && state.user.username.toLowerCase() === player.username.toLowerCase();
+    const isCurrent = Boolean(state.user && state.user.username && player && player.username && state.user.username.toLowerCase() === player.username.toLowerCase());
     const highlightStyle = isCurrent ? 'font-weight: 700; background-color: #f0fdf4;' : '';
     const dateFormatted = player.last_active_at ? new Date(player.last_active_at).toLocaleDateString() : '-';
 
     return `
       <tr style="${highlightStyle}">
         <td><span class="rank-badge ${rankClass}">${rank}</span></td>
-        <td><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge-db-small">You</span>' : ''}</td>
+        <td><span class="player-avatar-mini">${player.avatar || '🍌'}</span><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge-db-small">You</span>' : ''} <span class="player-title-mini">${escapeHtml(player.title || 'Banana Rookie')}</span></td>
         <td class="text-right"><strong class="mono-val">${player.high_score}</strong> <span class="text-muted" style="font-size: 0.75rem;">pts</span></td>
         <td class="text-center"><span class="mono-val">${player.streak}x</span></td>
         <td class="text-center"><span class="mono-val">${player.rounds_played}</span></td>
@@ -272,13 +322,13 @@ async function loadLeaderboard() {
   const modalRowsHtml = list.map((player, idx) => {
     const rank = idx + 1;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
-    const isCurrent = state.user && state.user.username.toLowerCase() === player.username.toLowerCase();
+    const isCurrent = Boolean(state.user && state.user.username && player && player.username && state.user.username.toLowerCase() === player.username.toLowerCase());
     const highlightStyle = isCurrent ? 'font-weight: 700; background-color: #f0fdf4;' : '';
 
     return `
       <tr style="${highlightStyle}">
         <td><span class="rank-badge ${rankClass}">${rank}</span></td>
-        <td><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge-db-small">You</span>' : ''}</td>
+        <td><span class="player-avatar-mini">${player.avatar || '🍌'}</span><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge-db-small">You</span>' : ''} <span class="player-title-mini">${escapeHtml(player.title || 'Banana Rookie')}</span></td>
         <td class="text-right"><strong class="mono-val">${player.high_score}</strong> pts</td>
         <td class="text-center"><span class="mono-val">${player.streak}x</span></td>
         <td class="text-center"><span class="mono-val">${player.rounds_played}</span></td>
@@ -298,7 +348,7 @@ async function loadUserHistory() {
   const history = res.data.history;
   if (history.length === 0) {
     if (DOM.historyTbody) {
-      DOM.historyTbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">No rounds recorded yet for ${escapeHtml(state.user.username)}.</td></tr>`;
+      DOM.historyTbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">No rounds recorded yet for ${escapeHtml(state.user.username)}.</td></tr>`;
     }
     return;
   }
@@ -311,15 +361,34 @@ async function loadUserHistory() {
       const sourceBadge = round.is_fallback
         ? '<span class="status-badge fallback-badge" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">Offline SVG</span>'
         : '<span class="status-badge source-badge" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">Banana API</span>';
+      
+      const roundMode = round.mode || 'medium';
+      const modeBadge = roundMode === 'easy'
+        ? '<span class="badge-mode-easy">Easy</span>'
+        : roundMode === 'hard'
+          ? '<span class="badge-mode-hard">Hard</span>'
+          : '<span class="badge-mode-medium">Medium</span>';
+
+      const guessDisplay = round.user_answer === -1
+        ? '<span style="color: var(--danger); font-size: 0.8rem; font-weight: 800;">⏰ Time\'s Up</span>'
+        : escapeHtml(round.user_answer);
+
+      const pointsDisplay = round.points_awarded > 0
+        ? `<strong class="mono-val" style="color: var(--success);">+${round.points_awarded}</strong> pts`
+        : round.points_awarded < 0
+          ? `<strong class="mono-val" style="color: var(--danger);">${round.points_awarded}</strong> pts`
+          : `<strong class="mono-val" style="color: var(--text-muted);">0</strong> pts`;
+
       const time = round.played_at ? new Date(round.played_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
 
       return `
         <tr>
           <td><span class="mono-val" style="color: var(--text-muted);">#${round.id || (idx + 1)}</span></td>
-          <td class="text-center"><strong class="mono-val" style="font-size: 1.05rem;">${round.user_answer}</strong></td>
+          <td class="text-center"><strong class="mono-val" style="font-size: 1.05rem;">${guessDisplay}</strong></td>
           <td class="text-center"><strong class="mono-val" style="color: var(--primary); font-size: 1.05rem;">${round.solution}</strong></td>
           <td>${resultBadge}</td>
-          <td class="text-right"><strong class="mono-val" style="color: ${round.points_awarded > 0 ? 'var(--success)' : 'var(--text-muted)'};">+${round.points_awarded}</strong> pts</td>
+          <td class="text-right">${pointsDisplay}</td>
+          <td class="text-center">${modeBadge}</td>
           <td>${sourceBadge}</td>
           <td><span class="mono-val" style="font-size: 0.75rem; color: var(--text-muted);">${time}</span></td>
         </tr>
@@ -329,10 +398,303 @@ async function loadUserHistory() {
 }
 
 // -----------------------------------------------------------------------------
+// Virtual Identity Engine: Avatar Customizer & Achievement Trophies
+// Demonstrates Theme 4: Virtual Identity via custom avatars and unlockable titles
+// -----------------------------------------------------------------------------
+const TITLES_CATALOG = [
+  { id: 'rookie', title: 'Banana Rookie', icon: '🍌', minScore: 0 },
+  { id: 'math_explorer', title: 'Math Explorer', icon: '🧭', minScore: 50 },
+  { id: 'puzzle_solver', title: 'Puzzle Solver', icon: '🧩', minScore: 150 },
+  { id: 'speed_master', title: 'Speed Master', icon: '⚡', minScore: 300 },
+  { id: 'primate_genius', title: 'Primate Genius', icon: '🐵', minScore: 500 },
+  { id: 'banana_champion', title: 'Grand Banana Champion', icon: '👑', minScore: 1000 }
+];
+
+let selectedAvatarInModal = '🍌';
+let selectedTitleInModal = 'Banana Rookie';
+
+async function loadAchievements() {
+  if (!state.user) return;
+  const res = await api('/api/user/achievements');
+  if (!res.ok || !res.data || !res.data.achievements) return;
+
+  const list = res.data.achievements;
+  const unlockedCount = list.filter(a => a.unlocked).length;
+  const totalCount = list.length;
+
+  if (DOM.achievementsTabBadge) {
+    DOM.achievementsTabBadge.textContent = `${unlockedCount}/${totalCount}`;
+  }
+  if (DOM.achievementsProgressText) {
+    DOM.achievementsProgressText.textContent = `${unlockedCount} / ${totalCount}`;
+  }
+  if (DOM.modalPreviewTrophies) {
+    DOM.modalPreviewTrophies.textContent = `${unlockedCount}/${totalCount}`;
+  }
+
+  if (DOM.achievementsGrid) {
+    DOM.achievementsGrid.innerHTML = list.map(ach => {
+      const isUnlocked = ach.unlocked;
+      const statusTag = isUnlocked
+        ? '<span class="achievement-badge-status unlocked-tag"><i class="fa-solid fa-check"></i> Unlocked</span>'
+        : '<span class="achievement-badge-status locked-tag"><i class="fa-solid fa-lock"></i> Locked</span>';
+
+      const dateText = isUnlocked && ach.unlockedAt
+        ? `<div style="font-size: 0.68rem; color: var(--success); margin-top: 0.25rem;"><i class="fa-solid fa-clock"></i> Earned ${new Date(ach.unlockedAt).toLocaleDateString()}</div>`
+        : '';
+
+      return `
+        <div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'}">
+          <div class="achievement-icon-box">${ach.icon}</div>
+          <div class="achievement-info">
+            <div class="achievement-title-row">
+              <span class="achievement-title">${escapeHtml(ach.name)}</span>
+              ${statusTag}
+            </div>
+            <p class="achievement-desc">${escapeHtml(ach.description)}</p>` +
+            dateText +
+          `</div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function openProfileModal() {
+  if (!state.user) {
+    showToast('Please sign in or start playing to customize your profile.', 'info');
+    return;
+  }
+
+  selectedAvatarInModal = state.user.avatar || '🍌';
+  selectedTitleInModal = state.user.title || 'Banana Rookie';
+
+  if (DOM.modalPreviewAvatar) DOM.modalPreviewAvatar.textContent = selectedAvatarInModal;
+  if (DOM.modalPreviewUsername) DOM.modalPreviewUsername.textContent = state.user.username;
+  if (DOM.modalPreviewTitle) DOM.modalPreviewTitle.textContent = selectedTitleInModal;
+  if (DOM.modalPreviewHighscore) DOM.modalPreviewHighscore.textContent = state.user.highScore || 0;
+
+  // Highlight active avatar button
+  if (DOM.avatarOptionsGrid) {
+    const btns = DOM.avatarOptionsGrid.querySelectorAll('.avatar-opt-btn');
+    btns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.avatar === selectedAvatarInModal);
+    });
+  }
+
+  // Populate title options with lock status
+  if (DOM.titlesOptionsList) {
+    const currentHigh = state.user.highScore || 0;
+    DOM.titlesOptionsList.innerHTML = TITLES_CATALOG.map(t => {
+      const isLocked = currentHigh < t.minScore;
+      const isSelected = selectedTitleInModal === t.title;
+
+      return `
+        <div class="title-opt-card ${isSelected ? 'active' : ''} ${isLocked ? 'locked' : ''}" data-title="${escapeHtml(t.title)}" data-locked="${isLocked}">
+          <div class="title-left">
+            <span>${t.icon}</span>
+            <span>${escapeHtml(t.title)}</span>
+          </div>
+          <div class="title-req">
+            ${isLocked ? `<i class="fa-solid fa-lock"></i> Requires ${t.minScore} pts` : `<span class="text-success"><i class="fa-solid fa-check"></i> Available</span>`}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach click events on title cards
+    DOM.titlesOptionsList.querySelectorAll('.title-opt-card').forEach(card => {
+      card.addEventListener('click', () => {
+        if (card.dataset.locked === 'true') {
+          showToast(`Title locked! Score more points to unlock.`, 'info');
+          return;
+        }
+        DOM.titlesOptionsList.querySelectorAll('.title-opt-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        selectedTitleInModal = card.dataset.title;
+        if (DOM.modalPreviewTitle) DOM.modalPreviewTitle.textContent = selectedTitleInModal;
+      });
+    });
+  }
+
+  loadAchievements();
+  DOM.profileModal.classList.remove('hidden');
+}
+
+async function saveProfileChanges() {
+  if (DOM.saveProfileBtn) DOM.saveProfileBtn.disabled = true;
+
+  const res = await api('/api/user/profile', {
+    method: 'POST',
+    body: {
+      avatar: selectedAvatarInModal,
+      title: selectedTitleInModal
+    }
+  });
+
+  if (DOM.saveProfileBtn) DOM.saveProfileBtn.disabled = false;
+
+  if (res.ok && res.data.success) {
+    state.user = { ...(state.user || {}), ...res.data.user };
+    updateHUD(state.user);
+    loadLeaderboard();
+    showToast('Profile avatar and title updated!', 'success');
+    DOM.profileModal.classList.add('hidden');
+  } else {
+    showToast(res.data?.error || 'Could not save profile changes.', 'error');
+  }
+}
+
+
+// -----------------------------------------------------------------------------
+// Timer & Difficulty Mode Mechanics
+// Demonstrates Theme 2: Event-Driven Programming with non-blocking intervals
+// -----------------------------------------------------------------------------
+function startTimer(seconds) {
+  stopTimer();
+
+  if (!seconds || seconds <= 0) {
+    if (DOM.puzzleTimerContainer) DOM.puzzleTimerContainer.classList.add('hidden');
+    return;
+  }
+
+  state.timerTotalSeconds = seconds;
+  state.timerSecondsLeft = seconds;
+
+  if (DOM.puzzleTimerContainer) {
+    DOM.puzzleTimerContainer.classList.remove('hidden');
+  }
+  updateTimerUI(100);
+
+  const startTime = Date.now();
+  const totalMs = seconds * 1000;
+
+  state.timerInterval = setInterval(() => {
+    const elapsedMs = Date.now() - startTime;
+    const remainingMs = Math.max(0, totalMs - elapsedMs);
+    state.timerSecondsLeft = Math.ceil(remainingMs / 1000);
+
+    const percent = Math.max(0, (remainingMs / totalMs) * 100);
+    updateTimerUI(percent);
+
+    if (remainingMs <= 0) {
+      stopTimer();
+      handleTimeout();
+    }
+  }, 100);
+}
+
+function stopTimer() {
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+}
+
+function updateTimerUI(percent = 100) {
+  if (DOM.timerSeconds) {
+    DOM.timerSeconds.textContent = `${state.timerSecondsLeft}s`;
+  }
+  if (DOM.timerProgressBar) {
+    DOM.timerProgressBar.style.width = `${percent}%`;
+
+    // Dynamic color gradient transitions: Green -> Yellow -> Red
+    DOM.timerProgressBar.classList.remove('timer-green', 'timer-yellow', 'timer-red');
+    if (percent > 45) {
+      DOM.timerProgressBar.classList.add('timer-green');
+    } else if (percent > 20) {
+      DOM.timerProgressBar.classList.add('timer-yellow');
+    } else {
+      DOM.timerProgressBar.classList.add('timer-red');
+    }
+  }
+
+  // Visual pulse when under 5 seconds remain
+  if (DOM.puzzleTimerContainer) {
+    if (state.timerSecondsLeft <= 4 && state.timerSecondsLeft > 0) {
+      DOM.puzzleTimerContainer.classList.add('timer-pulse');
+    } else {
+      DOM.puzzleTimerContainer.classList.remove('timer-pulse');
+    }
+  }
+}
+
+async function handleTimeout() {
+  if (state.isSubmitting || state.isLoading) return;
+  state.isSubmitting = true;
+  DOM.submitBtn.disabled = true;
+
+  showToast("⏰ Time's up!", 'error', 2500);
+
+  const res = await api('/api/game/submit-answer', {
+    method: 'POST',
+    body: {
+      isTimeout: true,
+      mode: state.currentMode
+    }
+  });
+
+  state.isSubmitting = false;
+
+  if (!res.ok) {
+    loadNewPuzzle();
+    return;
+  }
+
+  const { message, user } = res.data;
+  state.user = { ...(state.user || {}), ...user };
+  updateHUD(state.user);
+
+  loadLeaderboard();
+  loadUserHistory();
+
+  DOM.puzzleCard.classList.remove('celebrate-animation');
+  DOM.puzzleCard.classList.add('shake-animation');
+  setTimeout(() => DOM.puzzleCard.classList.remove('shake-animation'), 400);
+
+  showResultBanner(false, message);
+
+  setTimeout(() => {
+    loadNewPuzzle();
+  }, 1900);
+}
+
+function setDifficultyMode(mode) {
+  state.currentMode = mode;
+
+  // Update active styling on mode pills
+  if (DOM.modePills) {
+    DOM.modePills.forEach((pill) => {
+      const isActive = pill.dataset.mode === mode;
+      pill.classList.toggle('active', isActive);
+      pill.setAttribute('aria-checked', isActive ? 'true' : 'false');
+    });
+  }
+
+  // Persist mode choice to backend session
+  api('/api/game/mode', {
+    method: 'POST',
+    body: { mode }
+  });
+
+  const modeName = mode.charAt(0).toUpperCase() + mode.slice(1);
+  showToast(`Switched to ${modeName} Mode!`, 'info', 2000);
+
+  // If in active game screen, stop timer and fetch puzzle tailored to mode
+  if (DOM.gameSection && !DOM.gameSection.classList.contains('hidden')) {
+    stopTimer();
+    loadNewPuzzle();
+  }
+}
+
+
+
+// -----------------------------------------------------------------------------
 // Game Actions: Fetch Puzzle & Submit Answer
 // -----------------------------------------------------------------------------
-async function loadNewPuzzle() {
+async function loadNewPuzzle(retryCount = 0) {
   if (state.isLoading) return;
+  stopTimer(); // Freeze existing countdown when requesting a new puzzle
   state.isLoading = true;
 
   selectDigit(null);
@@ -342,12 +704,21 @@ async function loadNewPuzzle() {
   DOM.puzzleImg.classList.add('hidden');
   DOM.skipBtn.disabled = true;
 
-  const res = await api('/api/game/new-puzzle');
+  const res = await api(`/api/game/new-puzzle?mode=${encodeURIComponent(state.currentMode)}`);
   state.isLoading = false;
   DOM.skipBtn.disabled = false;
 
   if (!res.ok) {
-    showToast(res.data.error || 'Could not load puzzle.', 'error');
+    // Auto-retry up to 2 times to handle cold-start API latency / transient errors
+    if (retryCount < 2) {
+      const delay = (retryCount + 1) * 1500;
+      showToast(`Connecting to puzzle server... (attempt ${retryCount + 2}/3)`, 'info', delay);
+      DOM.puzzleLoader.classList.remove('hidden'); // keep loader visible during retry
+      setTimeout(() => loadNewPuzzle(retryCount + 1), delay);
+      return;
+    }
+    // All retries exhausted
+    showToast(res.data.error || 'Could not load puzzle. Press Skip to try again.', 'error', 5000);
     DOM.puzzleLoader.classList.add('hidden');
     return;
   }
@@ -368,36 +739,68 @@ async function loadNewPuzzle() {
     DOM.puzzleImg.src = res.data.question;
     DOM.puzzleLoader.classList.add('hidden');
     DOM.puzzleImg.classList.remove('hidden');
+
+    // Initiate countdown timer as soon as image is visible to player
+    const timeLimit = res.data.timeLimit !== undefined
+      ? res.data.timeLimit
+      : (state.currentMode === 'easy' ? 0 : (state.currentMode === 'hard' ? 12 : 25));
+    startTimer(timeLimit);
   };
   img.onerror = () => {
-    DOM.puzzleLoader.classList.add('hidden');
-    showToast('Failed to load puzzle image from server.', 'error');
+    // Image URL returned by API but couldn't load — retry if attempts remain
+    if (retryCount < 2) {
+      const delay = (retryCount + 1) * 1500;
+      showToast(`Puzzle image failed to load, retrying...`, 'info', delay);
+      DOM.puzzleLoader.classList.remove('hidden');
+      setTimeout(() => loadNewPuzzle(retryCount + 1), delay);
+    } else {
+      DOM.puzzleLoader.classList.add('hidden');
+      showToast('Failed to load puzzle image. Press Skip to try again.', 'error', 5000);
+    }
   };
 }
 
 async function handleAnswerSubmit() {
   if (state.selectedAnswer === null || state.isSubmitting) return;
+  stopTimer(); // Freeze timer immediately upon submission
   state.isSubmitting = true;
   DOM.submitBtn.disabled = true;
 
   const res = await api('/api/game/submit-answer', {
     method: 'POST',
-    body: { answer: state.selectedAnswer }
+    body: {
+      answer: state.selectedAnswer,
+      mode: state.currentMode
+    }
   });
 
   state.isSubmitting = false;
 
   if (!res.ok) {
-    showToast(res.data.error || 'Failed to submit answer.', 'error');
+    if (res.status === 401) {
+      showToast('Session expired. Please sign in again.', 'error', 3500);
+      switchView('auth');
+      state.user = null;
+      return;
+    }
+    showToast(res.data?.error || 'Failed to submit answer.', 'error');
     DOM.submitBtn.disabled = false;
     return;
   }
 
-  const { correct, message, user } = res.data;
+  const { correct, message, user, newAchievements } = res.data;
 
-  // Update HUD
-  state.user = user;
-  updateHUD(user);
+  // Update HUD preserving username
+  state.user = { ...(state.user || {}), ...user };
+  updateHUD(state.user);
+
+  // Trigger celebration toasts if new achievements were unlocked!
+  if (Array.isArray(newAchievements) && newAchievements.length > 0) {
+    newAchievements.forEach((ach) => {
+      showToast(`🏆 Trophy Unlocked: ${ach.icon} ${ach.name}!`, 'success', 5500);
+    });
+    loadAchievements();
+  }
 
   // Refresh SQLite persistence views
   loadLeaderboard();
@@ -437,6 +840,7 @@ function initEvents() {
   // 1. On page load: Check session and initialize SQLite views
   window.addEventListener('DOMContentLoaded', async () => {
     loadLeaderboard();
+    loadAchievements();
 
     const res = await api('/api/auth/me');
     if (res.ok && res.data.authenticated) {
@@ -714,11 +1118,13 @@ function initEvents() {
   });
 
   DOM.skipBtn.addEventListener('click', () => {
+    stopTimer();
     showToast('Skipping puzzle...', 'info', 1500);
     loadNewPuzzle();
   });
 
   DOM.resetBtn.addEventListener('click', async () => {
+    stopTimer();
     DOM.resetBtn.disabled = true;
     const res = await api('/api/game/reset', { method: 'POST' });
     DOM.resetBtn.disabled = false;
@@ -738,6 +1144,7 @@ function initEvents() {
   });
 
   DOM.logoutBtn.addEventListener('click', async () => {
+    stopTimer();
     DOM.logoutBtn.disabled = true;
     try {
       await api('/api/auth/logout', { method: 'POST' });
@@ -747,37 +1154,108 @@ function initEvents() {
       DOM.logoutBtn.disabled = false;
       state.user = null;
       state.selectedAnswer = null;
+      state.currentMode = 'medium';
       switchView('auth');
       loadLeaderboard();
       showToast('You have been logged out.', 'info');
     }
   });
 
+  // 5.1 Difficulty Mode Selector Handlers
+  if (DOM.modePills && DOM.modePills.length > 0) {
+    DOM.modePills.forEach((pill) => {
+      pill.addEventListener('click', () => {
+        const mode = pill.dataset.mode;
+        if (!mode || mode === state.currentMode) return;
+        setDifficultyMode(mode);
+      });
+    });
+  }
+
   // 6. SQLite Leaderboard & History Tabs
   if (DOM.tabBtnLeaderboard && DOM.tabBtnHistory) {
     DOM.tabBtnLeaderboard.addEventListener('click', () => {
       DOM.tabBtnLeaderboard.classList.add('active');
       DOM.tabBtnHistory.classList.remove('active');
+      if (DOM.tabBtnAchievements) DOM.tabBtnAchievements.classList.remove('active');
       DOM.tabContentLeaderboard.classList.remove('hidden');
       DOM.tabContentHistory.classList.add('hidden');
+      if (DOM.tabContentAchievements) DOM.tabContentAchievements.classList.add('hidden');
     });
 
     DOM.tabBtnHistory.addEventListener('click', () => {
       DOM.tabBtnHistory.classList.add('active');
       DOM.tabBtnLeaderboard.classList.remove('active');
+      if (DOM.tabBtnAchievements) DOM.tabBtnAchievements.classList.remove('active');
       DOM.tabContentHistory.classList.remove('hidden');
       DOM.tabContentLeaderboard.classList.add('hidden');
+      if (DOM.tabContentAchievements) DOM.tabContentAchievements.classList.add('hidden');
       loadUserHistory();
     });
+
+    if (DOM.tabBtnAchievements) {
+      DOM.tabBtnAchievements.addEventListener('click', () => {
+        DOM.tabBtnAchievements.classList.add('active');
+        DOM.tabBtnLeaderboard.classList.remove('active');
+        DOM.tabBtnHistory.classList.remove('active');
+        if (DOM.tabContentAchievements) DOM.tabContentAchievements.classList.remove('hidden');
+        DOM.tabContentLeaderboard.classList.add('hidden');
+        DOM.tabContentHistory.classList.add('hidden');
+        loadAchievements();
+      });
+    }
   }
 
   // 7. Refresh SQLite Data Button
   if (DOM.refreshDataBtn) {
     DOM.refreshDataBtn.addEventListener('click', async () => {
       DOM.refreshDataBtn.classList.add('fa-spin');
-      await Promise.all([loadLeaderboard(), loadUserHistory()]);
+      await Promise.all([loadLeaderboard(), loadUserHistory(), loadAchievements()]);
       setTimeout(() => DOM.refreshDataBtn.classList.remove('fa-spin'), 600);
       showToast('SQLite records refreshed.', 'info', 1500);
+    });
+  }
+
+
+  // 9. Profile & Avatar Customizer Listeners
+  if (DOM.sessionBadge) {
+    DOM.sessionBadge.addEventListener('click', () => {
+      openProfileModal();
+    });
+  }
+
+  if (DOM.hudProfileTrigger) {
+    DOM.hudProfileTrigger.addEventListener('click', () => {
+      openProfileModal();
+    });
+  }
+
+  if (DOM.profileModalCloseBtn && DOM.profileModal) {
+    DOM.profileModalCloseBtn.addEventListener('click', () => {
+      DOM.profileModal.classList.add('hidden');
+    });
+
+    DOM.profileModal.addEventListener('click', (e) => {
+      if (e.target === DOM.profileModal) {
+        DOM.profileModal.classList.add('hidden');
+      }
+    });
+  }
+
+  if (DOM.saveProfileBtn) {
+    DOM.saveProfileBtn.addEventListener('click', saveProfileChanges);
+  }
+
+  // Avatar button selectors in profile modal
+  if (DOM.avatarOptionsGrid) {
+    const btns = DOM.avatarOptionsGrid.querySelectorAll('.avatar-opt-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedAvatarInModal = btn.dataset.avatar;
+        if (DOM.modalPreviewAvatar) DOM.modalPreviewAvatar.textContent = selectedAvatarInModal;
+      });
     });
   }
 

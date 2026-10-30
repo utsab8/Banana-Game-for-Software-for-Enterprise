@@ -104,6 +104,29 @@ async function initDatabase() {
         if (!colNames.includes('password_hash')) {
           await run('ALTER TABLE users ADD COLUMN password_hash TEXT;');
         }
+        if (!colNames.includes('avatar')) {
+          await run("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT '🍌';");
+        }
+        if (!colNames.includes('title')) {
+          await run("ALTER TABLE users ADD COLUMN title TEXT DEFAULT 'Banana Rookie';");
+        }
+
+        // 3. User achievements table (Virtual Identity milestones & trophies)
+        await run(`
+          CREATE TABLE IF NOT EXISTS user_achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            achievement_key TEXT NOT NULL,
+            unlocked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, achievement_key),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+          );
+        `);
+
+        await run(`
+          CREATE INDEX IF NOT EXISTS idx_user_achievements_user 
+          ON user_achievements (user_id);
+        `);
 
         // Unique index for email (allowing nulls for guest or legacy records)
         await run(`
@@ -137,6 +160,13 @@ async function initDatabase() {
           CREATE INDEX IF NOT EXISTS idx_game_history_user 
           ON game_history (user_id, played_at DESC);
         `);
+
+        // Migration check: ensure mode column exists in game_history
+        const historyCols = await all('PRAGMA table_info(game_history);');
+        const historyColNames = historyCols.map(c => c.name);
+        if (!historyColNames.includes('mode')) {
+          await run("ALTER TABLE game_history ADD COLUMN mode TEXT DEFAULT 'medium';");
+        }
 
         console.log('[SQLite] Schema and indexes initialized successfully.');
         resolve();
@@ -278,18 +308,19 @@ async function resetUserScore(userId) {
  * Log a completed puzzle round attempt into game_history
  * @param {object} roundData 
  */
-async function recordRound({ userId, userAnswer, solution, isCorrect, pointsAwarded, isFallback }) {
+async function recordRound({ userId, userAnswer, solution, isCorrect, pointsAwarded, isFallback, mode = 'medium' }) {
   const result = await run(
     `INSERT INTO game_history 
-     (user_id, user_answer, solution, is_correct, points_awarded, is_fallback) 
-     VALUES (?, ?, ?, ?, ?, ?)`,
+     (user_id, user_answer, solution, is_correct, points_awarded, is_fallback, mode) 
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       userId,
       userAnswer,
       solution,
       isCorrect ? 1 : 0,
       pointsAwarded,
-      isFallback ? 1 : 0
+      isFallback ? 1 : 0,
+      mode || 'medium'
     ]
   );
 
@@ -301,14 +332,41 @@ async function recordRound({ userId, userAnswer, solution, isCorrect, pointsAwar
  * @param {number} limit 
  */
 async function getLeaderboard(limit = 10) {
-  return await all(
-    `SELECT id, username, score, high_score, streak, rounds_played, last_active_at 
-     FROM users 
-     WHERE high_score > 0 OR rounds_played > 0
-     ORDER BY high_score DESC, rounds_played ASC 
-     LIMIT ?`,
-    [limit]
-  );
+  try {
+    const rows = await all(
+      `SELECT id, username, avatar, title, score, high_score, streak, rounds_played, last_active_at 
+       FROM users 
+       WHERE high_score > 0 OR rounds_played > 0
+       ORDER BY high_score DESC, rounds_played ASC 
+       LIMIT ?`,
+      [limit]
+    );
+    return rows.map(r => ({
+      ...r,
+      avatar: r.avatar || '🍌',
+      title: r.title || 'Banana Rookie'
+    }));
+  } catch (queryErr) {
+    console.warn('[SQLite Leaderboard Warning] Retrying without avatar/title:', queryErr.message);
+    try {
+      const fallbackRows = await all(
+        `SELECT id, username, score, high_score, streak, rounds_played, last_active_at 
+         FROM users 
+         WHERE high_score > 0 OR rounds_played > 0
+         ORDER BY high_score DESC, rounds_played ASC 
+         LIMIT ?`,
+        [limit]
+      );
+      return fallbackRows.map(r => ({
+        ...r,
+        avatar: '🍌',
+        title: 'Banana Rookie'
+      }));
+    } catch (fallbackErr) {
+      console.error('[SQLite Leaderboard Fatal Error]', fallbackErr.message);
+      return [];
+    }
+  }
 }
 
 /**
@@ -316,15 +374,180 @@ async function getLeaderboard(limit = 10) {
  * @param {number} userId 
  * @param {number} limit 
  */
-async function getUserHistory(userId, limit = 5) {
+async function getUserHistory(userId, limit = 8) {
   return await all(
-    `SELECT id, user_answer, solution, is_correct, points_awarded, is_fallback, played_at 
+    `SELECT id, user_answer, solution, is_correct, points_awarded, is_fallback, mode, played_at 
      FROM game_history 
      WHERE user_id = ? 
      ORDER BY played_at DESC 
      LIMIT ?`,
     [userId, limit]
   );
+}
+
+
+/**
+ * Global achievements definitions
+ */
+const ACHIEVEMENTS_CATALOG = [
+  {
+    key: 'first_bite',
+    name: 'First Bite',
+    icon: '🍌',
+    category: 'Milestone',
+    description: 'Solve your very first math puzzle correctly.'
+  },
+  {
+    key: 'streak_3',
+    name: 'Sharp Deduction',
+    icon: '🎯',
+    category: 'Streak',
+    description: 'Reach a winning streak of 3 puzzles in a row.'
+  },
+  {
+    key: 'streak_5',
+    name: 'On Fire!',
+    icon: '🔥',
+    category: 'Streak',
+    description: 'Reach a blazing streak of 5 puzzles in a row.'
+  },
+  {
+    key: 'speed_demon',
+    name: 'Speed Demon',
+    icon: '⚡',
+    category: 'Speed',
+    description: 'Solve a puzzle in Hard mode under the 12s timer.'
+  },
+  {
+    key: 'centurion',
+    name: 'Centurion',
+    icon: '💯',
+    category: 'Score',
+    description: 'Achieve a High Score of 100 points or more.'
+  },
+  {
+    key: 'high_roller',
+    name: 'High Roller',
+    icon: '👑',
+    category: 'Score',
+    description: 'Achieve an elite High Score of 500 points.'
+  },
+  {
+    key: 'dedicated_solver',
+    name: 'Dedicated Solver',
+    icon: '📚',
+    category: 'Dedication',
+    description: 'Play 10 rounds of mathematical challenges.'
+  },
+  {
+    key: 'grand_master',
+    name: 'Grand Banana Master',
+    icon: '🌟',
+    category: 'Mastery',
+    description: 'Achieve a legendary High Score of 1000 points.'
+  }
+];
+
+/**
+ * Update player avatar and equipped title
+ */
+async function updateUserProfile(userId, { avatar, title }) {
+  const updates = [];
+  const params = [];
+
+  if (avatar) {
+    updates.push('avatar = ?');
+    params.push(avatar);
+  }
+  if (title) {
+    updates.push('title = ?');
+    params.push(title);
+  }
+
+  if (updates.length > 0) {
+    params.push(userId);
+    await run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+  }
+
+  return await getUserById(userId);
+}
+
+/**
+ * Fetch achievements unlocked by a user, merged with full achievements catalog
+ */
+async function getUserAchievements(userId) {
+  const unlockedRows = await all(
+    'SELECT achievement_key, unlocked_at FROM user_achievements WHERE user_id = ?',
+    [userId]
+  );
+  const unlockedMap = {};
+  unlockedRows.forEach(r => {
+    unlockedMap[r.achievement_key] = r.unlocked_at;
+  });
+
+  return ACHIEVEMENTS_CATALOG.map(ach => ({
+    ...ach,
+    unlocked: Boolean(unlockedMap[ach.key]),
+    unlockedAt: unlockedMap[ach.key] || null
+  }));
+}
+
+/**
+ * Check criteria and unlock any new achievements earned
+ */
+async function checkAndUnlockAchievements(userId, userStats, roundResult) {
+  const unlockedRows = await all(
+    'SELECT achievement_key FROM user_achievements WHERE user_id = ?',
+    [userId]
+  );
+  const alreadyUnlocked = new Set(unlockedRows.map(r => r.achievement_key));
+  const newlyUnlocked = [];
+
+  for (const ach of ACHIEVEMENTS_CATALOG) {
+    if (alreadyUnlocked.has(ach.key)) continue;
+
+    let qualifies = false;
+    switch (ach.key) {
+      case 'first_bite':
+        qualifies = roundResult && roundResult.isCorrect;
+        break;
+      case 'streak_3':
+        qualifies = userStats.streak >= 3;
+        break;
+      case 'streak_5':
+        qualifies = userStats.streak >= 5;
+        break;
+      case 'speed_demon':
+        qualifies = roundResult && roundResult.isCorrect && roundResult.mode === 'hard';
+        break;
+      case 'centurion':
+        qualifies = userStats.highScore >= 100;
+        break;
+      case 'high_roller':
+        qualifies = userStats.highScore >= 500;
+        break;
+      case 'dedicated_solver':
+        qualifies = userStats.roundsPlayed >= 10;
+        break;
+      case 'grand_master':
+        qualifies = userStats.highScore >= 1000;
+        break;
+    }
+
+    if (qualifies) {
+      try {
+        await run(
+          'INSERT OR IGNORE INTO user_achievements (user_id, achievement_key) VALUES (?, ?)',
+          [userId, ach.key]
+        );
+        newlyUnlocked.push(ach);
+      } catch (e) {
+        console.warn('[Achievement Error]', e.message);
+      }
+    }
+  }
+
+  return newlyUnlocked;
 }
 
 /**
@@ -358,6 +581,10 @@ module.exports = {
   recordRound,
   getLeaderboard,
   getUserHistory,
+  updateUserProfile,
+  getUserAchievements,
+  checkAndUnlockAchievements,
+  ACHIEVEMENTS_CATALOG,
   closeDatabase,
   DB_PATH
 };

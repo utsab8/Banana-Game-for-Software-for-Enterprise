@@ -50,13 +50,14 @@
           <span>Leaderboard</span>
         </button>
 
-        <!-- Current Player Identity Chip -->
-        <div id="session-badge" class="player-chip guest">
-          <div class="player-avatar" id="user-avatar-display">
-            <i class="fa-solid fa-user"></i>
+        <!-- Current Player Identity Chip & Profile Trigger -->
+        <button type="button" id="session-badge" class="player-chip guest" title="Customize avatar & view achievements">
+          <div class="player-avatar" id="user-avatar-display">🍌</div>
+          <div class="player-chip-meta">
+            <span id="session-status-text">Guest Player</span>
+            <span id="session-title-text" class="player-title-pill">Banana Rookie</span>
           </div>
-          <span id="session-status-text">Guest Player</span>
-        </div>
+        </button>
 
         <!-- Logout Action -->
         <button type="button" id="logout-btn" class="nav-btn btn-logout hidden" title="Sign out of game">
@@ -254,13 +255,14 @@
       <div class="stats-bar game-hud-grid">
         
         <!-- Stat 1: Player Profile -->
-        <div class="hud-card hud-player">
-          <div class="hud-icon-box icon-avatar">
-            <i class="fa-solid fa-user-astronaut"></i>
+        <div class="hud-card hud-player" id="hud-profile-trigger" title="Click to customize avatar and title" style="cursor: pointer;">
+          <div class="hud-icon-box icon-avatar" id="hud-avatar-box">
+            <span id="hud-avatar-display">🍌</span>
           </div>
           <div class="hud-data">
             <span class="hud-label">PLAYER</span>
             <span id="hud-player-name" class="hud-val player-name">-</span>
+            <span id="hud-player-title" class="hud-sub-title">Banana Rookie</span>
           </div>
         </div>
 
@@ -316,6 +318,31 @@
 
       </div>
 
+      <!-- Difficulty Mode Switcher -->
+      <div class="mode-selector-bar">
+        <div class="mode-selector-title">
+          <i class="fa-solid fa-gauge-high"></i>
+          <span>DIFFICULTY MODE</span>
+        </div>
+        <div class="mode-pills" role="radiogroup" aria-label="Game Difficulty Mode">
+          <button type="button" class="mode-pill btn-mode-easy" data-mode="easy" role="radio" aria-checked="false" title="Relaxed puzzle solving without time pressure">
+            <span class="mode-indicator dot-easy"></span>
+            <span class="mode-name">Easy</span>
+            <span class="mode-badge">No Timer • 1x Pts</span>
+          </button>
+          <button type="button" class="mode-pill btn-mode-medium active" data-mode="medium" role="radio" aria-checked="true" title="Standard challenge with 25-second timer">
+            <span class="mode-indicator dot-medium"></span>
+            <span class="mode-name">Medium</span>
+            <span class="mode-badge">25s Timer • 1.5x Pts</span>
+          </button>
+          <button type="button" class="mode-pill btn-mode-hard" data-mode="hard" role="radio" aria-checked="false" title="High speed 12-second challenge with 2x points and -5 penalty">
+            <span class="mode-indicator dot-hard"></span>
+            <span class="mode-name">Hard</span>
+            <span class="mode-badge">12s Speed • 2x Pts</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Main Game Board: Puzzle Stage (Left) & Playful Keypad (Right) -->
       <div class="game-board">
         
@@ -331,6 +358,20 @@
             <span id="fallback-indicator" class="fallback-pill hidden">
               <i class="fa-solid fa-wifi"></i> Offline Puzzle
             </span>
+          </div>
+
+          <!-- Countdown Timer Bar for Timed Modes -->
+          <div id="puzzle-timer-container" class="timer-container hidden">
+            <div class="timer-meta-row">
+              <div class="timer-label">
+                <i class="fa-solid fa-stopwatch"></i>
+                <span>TIME REMAINING</span>
+              </div>
+              <span id="timer-seconds" class="timer-digits">25s</span>
+            </div>
+            <div class="timer-track">
+              <div id="timer-progress-bar" class="timer-fill timer-green" style="width: 100%;"></div>
+            </div>
           </div>
 
           <!-- Puzzle Visual Stage -->
@@ -440,6 +481,10 @@
               <i class="fa-solid fa-clock-rotate-left"></i>
               <span>My Recent Games</span>
             </button>
+            <button type="button" id="tab-btn-achievements" class="tab-btn">
+              <i class="fa-solid fa-medal"></i>
+              <span>Achievements <span id="achievements-tab-badge" class="tab-counter-badge">0/8</span></span>
+            </button>
           </div>
 
           <button type="button" id="refresh-data-btn" class="btn btn-refresh" title="Refresh standings">
@@ -481,16 +526,34 @@
                 <th class="text-center">Solution</th>
                 <th>Result</th>
                 <th class="text-right">Points</th>
+                <th class="text-center">Mode</th>
                 <th>Type</th>
                 <th>Time</th>
               </tr>
             </thead>
             <tbody id="history-tbody">
               <tr>
-                <td colspan="7" class="text-center py-4 text-muted">No rounds played yet. Try a puzzle!</td>
+                <td colspan="8" class="text-center py-4 text-muted">No rounds played yet. Try a puzzle!</td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Tab 3: Achievements & Trophies Grid -->
+        <div id="tab-content-achievements" class="achievements-panel hidden">
+          <div class="achievements-banner">
+            <div class="achievements-banner-text">
+              <h4>🏆 Banana Trophies & Milestones</h4>
+              <p>Achieve higher streaks, speed challenges, and score milestones to unlock exclusive player titles!</p>
+            </div>
+            <div class="achievements-stats-chip">
+              <span id="achievements-progress-text" class="progress-big">0 / 8</span>
+              <span class="progress-label">Unlocked</span>
+            </div>
+          </div>
+          <div id="achievements-grid" class="achievements-grid">
+            <!-- Dynamically populated achievement cards -->
+          </div>
         </div>
 
       </div>
@@ -498,6 +561,71 @@
     </section>
 
   </main>
+
+  <!-- Profile & Avatar Customizer Modal Dialog -->
+  <div id="profile-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card profile-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-trophy">🎨</span>
+          <div>
+            <h3>Player Profile &amp; Avatar</h3>
+            <p>Customize your virtual identity &amp; equipped title</p>
+          </div>
+        </div>
+        <button type="button" id="profile-modal-close-btn" class="btn-close" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Current Profile Preview Banner -->
+        <div class="profile-preview-card">
+          <div class="profile-preview-avatar" id="modal-preview-avatar">🍌</div>
+          <div class="profile-preview-meta">
+            <h4 id="modal-preview-username">Player</h4>
+            <span id="modal-preview-title" class="preview-title-badge">Banana Rookie</span>
+            <div class="preview-stats-row">
+              <span><i class="fa-solid fa-crown text-warning"></i> High Score: <strong id="modal-preview-highscore">0</strong> pts</span>
+              <span><i class="fa-solid fa-medal text-primary"></i> Trophies: <strong id="modal-preview-trophies">0/8</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. Pick Avatar Emoji -->
+        <div class="profile-section">
+          <label class="section-subheading"><i class="fa-solid fa-face-smile"></i> Choose Your Game Avatar</label>
+          <div class="avatar-grid" id="avatar-options-grid">
+            <button type="button" class="avatar-opt-btn active" data-avatar="🍌">🍌</button>
+            <button type="button" class="avatar-opt-btn" data-avatar="🐵">🐵</button>
+            <button type="button" class="avatar-opt-btn" data-avatar="🚀">🚀</button>
+            <button type="button" class="avatar-opt-btn" data-avatar="🧙‍♂️">🧙‍♂️</button>
+            <button type="button" class="avatar-opt-btn" data-avatar="👑">👑</button>
+            <button type="button" class="avatar-opt-btn" data-avatar="🤖">🤖</button>
+            <button type="button" class="avatar-opt-btn" data-avatar="🦁">🦁</button>
+            <button type="button" class="avatar-opt-btn" data-avatar="⚡">⚡</button>
+            <button type="button" class="avatar-opt-btn" data-avatar="🦉">🦉</button>
+            <button type="button" class="avatar-opt-btn" data-avatar="🐱">🐱</button>
+          </div>
+        </div>
+
+        <!-- 2. Pick Custom Title -->
+        <div class="profile-section">
+          <label class="section-subheading"><i class="fa-solid fa-id-badge"></i> Select Your Equipped Title</label>
+          <div class="titles-list" id="titles-options-list">
+            <!-- Dynamically populated titles with lock status -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="save-profile-btn" class="btn btn-game-primary">
+          <i class="fa-solid fa-check"></i>
+          <span>Save Profile Changes</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Leaderboard Modal Dialog -->
   <div id="leaderboard-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
