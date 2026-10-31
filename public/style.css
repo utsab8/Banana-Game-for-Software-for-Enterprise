@@ -3039,6 +3039,616 @@ body.game-app {
 }
 
 /* -------------------------------------------------------------------------- */
+/* 16.1 How to Play Section Styles                                             */
+/* -------------------------------------------------------------------------- */
+.home-how-card {
+  padding: 2.25rem 2.5rem;
+  background: #FFFFFF;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  margin-top: 1.5rem;
+}
+
+.how-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.how-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.badge-guide {
+  background: #FFF4D6;
+  color: #B58414;
+  border: 1px solid var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.how-title {
+  font-family: var(--font-game);
+  font-size: 2rem;
+  color: var(--text-main);
+  line-height: 1.15;
+}
+
+.how-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.btn-tutorial-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: var(--primary);
+  color: var(--text-main);
+  border: 2px solid #DFA71E;
+  box-shadow: 0 4px 0 var(--primary-dark);
+  font-family: var(--font-game);
+  font-size: 0.96rem;
+  font-weight: 700;
+  padding: 0.65rem 1.35rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-tutorial-trigger:hover {
+  background: #FED858;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--primary-dark);
+}
+
+.btn-tutorial-trigger:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+/* 4 Step Cards Grid */
+.how-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.how-step-card {
+  background: var(--bg-cream-light);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.6rem 1.25rem 1.35rem 1.25rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.how-step-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card);
+  border-color: var(--primary);
+}
+
+.step-num-badge {
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--text-main);
+  font-family: var(--font-game);
+  font-weight: 800;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 0 var(--primary-dark);
+}
+
+.step-illustration {
+  width: 100%;
+  height: 85px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+}
+
+.step-svg {
+  width: 110px;
+  height: 80px;
+  display: block;
+}
+
+.step-title {
+  font-family: var(--font-game);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.45rem;
+  line-height: 1.3;
+}
+
+.step-desc {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Difficulty Explanation Strip */
+.how-diff-strip {
+  background: var(--bg-cream);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 1.75rem;
+}
+
+.how-diff-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.15rem;
+}
+
+.how-diff-title {
+  font-family: var(--font-game);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--dark-green);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.how-diff-subtitle {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.how-diff-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.15rem;
+}
+
+.how-diff-card {
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.how-diff-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.diff-easy:hover { border-color: var(--success); }
+.diff-medium:hover { border-color: var(--primary); }
+.diff-hard:hover { border-color: var(--danger); }
+
+.diff-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.diff-level-name {
+  font-family: var(--font-game);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.diff-mult-tag {
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+  margin-left: auto;
+}
+
+.diff-easy .diff-mult-tag {
+  background: #EDF7F0;
+  color: var(--dark-green);
+}
+
+.diff-medium .diff-mult-tag {
+  background: #FFF4D6;
+  color: #B58414;
+}
+
+.diff-hard .diff-mult-tag {
+  background: #FDF1F0;
+  color: var(--danger-dark);
+}
+
+.diff-expl-text {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 16.2 Interactive Tutorial Modal Styles                                      */
+/* -------------------------------------------------------------------------- */
+.tutorial-modal-card {
+  max-width: 620px;
+}
+
+.tutorial-modal-body {
+  padding: 1.5rem 1.75rem;
+}
+
+.tut-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  gap: 0.45rem;
+}
+
+.tut-step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-cream);
+  border: 2px solid var(--border-color);
+  color: var(--text-muted);
+  font-family: var(--font-game);
+  font-weight: 700;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tut-step-dot.active {
+  background: var(--primary);
+  color: var(--text-main);
+  border-color: #DFA71E;
+  box-shadow: 0 3px 0 var(--primary-dark);
+}
+
+.tut-step-line {
+  width: 36px;
+  height: 3px;
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.tut-visual-box,
+.tut-sample-board,
+.tut-interactive-stage,
+.tut-victory-box {
+  background: var(--bg-cream-light);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 1.5rem;
+  text-align: center;
+}
+
+.tut-mascot-circle {
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 0.85rem;
+  user-select: none;
+}
+
+.tut-intro-text h4,
+.tut-victory-box h4 {
+  font-family: var(--font-game);
+  font-size: 1.35rem;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.tut-intro-text p,
+.tut-victory-box p {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.tut-callout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: #FFF4D6;
+  border: 1.5px solid var(--primary);
+  padding: 0.65rem 1.15rem;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 1.15rem;
+  text-align: left;
+}
+
+.tut-board-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.tut-equation-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  font-family: var(--font-game);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 1.15rem 0;
+}
+
+.tut-equation-preview.mini {
+  font-size: 1.85rem;
+  margin: 0.65rem 0;
+}
+
+.tut-eq-banana {
+  background: #FFF4D6;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 3px 0 var(--primary-dark);
+}
+
+.tut-pulse {
+  animation: pulseDot 1.5s infinite ease-in-out;
+}
+
+.tut-clue-card {
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.1rem;
+  margin-top: 1.15rem;
+  text-align: left;
+}
+
+.tut-clue-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--secondary);
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.tut-clue-math {
+  margin-top: 0.4rem;
+  font-family: var(--font-game);
+  font-size: 1.05rem;
+  color: var(--dark-green);
+}
+
+.tut-selected-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+#tut-selected-val {
+  font-family: var(--font-game);
+  font-size: 1.5rem;
+  color: var(--dark-green);
+}
+
+.tut-keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.65rem;
+  max-width: 380px;
+  margin: 0 auto 0.75rem auto;
+}
+
+.tut-key-btn {
+  background: #FFFFFF;
+  border: 2px solid var(--border-color);
+  box-shadow: 0 3px 0 var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0;
+  font-family: var(--font-game);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tut-key-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.tut-key-btn:active,
+.tut-key-btn.active {
+  transform: translateY(2px);
+  box-shadow: none;
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+.tut-key-btn.correct {
+  background: var(--success-light);
+  border-color: var(--success);
+  color: var(--dark-green);
+  box-shadow: 0 3px 0 var(--success-dark);
+}
+
+.tut-feedback-hint {
+  font-family: var(--font-game);
+  font-size: 0.94rem;
+  font-weight: 700;
+  padding: 0.6rem 1.15rem;
+  border-radius: var(--radius-md);
+  margin-top: 0.65rem;
+  animation: bounceIn 0.3s var(--ease-bounce);
+}
+
+.tut-feedback-hint.correct {
+  background: var(--success-light);
+  color: var(--dark-green);
+  border: 1.5px solid var(--success);
+}
+
+.tut-feedback-hint.wrong {
+  background: var(--danger-light);
+  color: var(--danger-dark);
+  border: 1.5px solid var(--danger);
+}
+
+.tut-victory-icon {
+  font-size: 3.5rem;
+  margin-bottom: 0.65rem;
+  user-select: none;
+}
+
+.tut-tips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+  text-align: left;
+}
+
+.tut-tip-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-color);
+  padding: 0.65rem 0.95rem;
+  border-radius: var(--radius-md);
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.tut-tip-item strong {
+  color: var(--text-main);
+}
+
+.tut-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.4rem;
+  padding-top: 1.15rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.tut-nav-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-tut-next,
+.btn-tut-finish {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.45rem;
+  font-family: var(--font-game);
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  position: relative;
+  z-index: 5;
+  transition: transform 0.12s var(--ease-bounce), box-shadow 0.12s var(--ease-bounce), background-color 0.15s ease;
+}
+
+.btn-tut-next {
+  background: var(--primary);
+  color: var(--text-main);
+  border: 2px solid #DFA71E;
+  box-shadow: 0 4px 0 var(--primary-dark);
+}
+
+.btn-tut-next:hover {
+  background: #FED858;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--primary-dark);
+}
+
+.btn-tut-next:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--primary-dark);
+}
+
+.btn-tut-finish {
+  background: var(--success);
+  color: #FFFFFF;
+  border: 2px solid var(--success-dark);
+  box-shadow: 0 4px 0 var(--dark-green);
+}
+
+.btn-tut-finish:hover {
+  background: #5ea06b;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--dark-green);
+}
+
+.btn-tut-finish:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--dark-green);
+}
+
+.btn-tut-next span,
+.btn-tut-next i,
+.btn-tut-finish span,
+.btn-tut-finish i {
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------------------- */
 /* 17. Responsive Breakpoints: Desktop, Tablet & Mobile                       */
 /* -------------------------------------------------------------------------- */
 @media (max-width: 960px) {
@@ -3053,6 +3663,10 @@ body.game-app {
 
   .home-feature-grid {
     grid-template-columns: 1fr;
+  }
+
+  .how-steps-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   /* On mobile and tablet, stack puzzle board and answer panel vertically */
@@ -3110,6 +3724,33 @@ body.game-app {
   .home-stats-row {
     grid-template-columns: 1fr;
   }
+
+  .home-how-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .how-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .how-title-group {
+    align-items: center;
+  }
+
+  .btn-tutorial-trigger {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .how-steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .how-diff-grid {
+    grid-template-columns: 1fr;
+  }
   
   .mode-selector-bar {
     flex-direction: column;
@@ -3131,5 +3772,18 @@ body.game-app {
   
   .keypad-action-row {
     grid-template-columns: 1fr !important;
+  }
+
+  .tut-modal-footer {
+    flex-direction: column-reverse;
+    gap: 0.85rem;
+  }
+
+  .tut-modal-footer .btn-close-modal,
+  .tut-nav-btns,
+  .btn-tut-next,
+  #tut-btn-next,
+  #tut-btn-finish {
+    width: 100%;
   }
 }

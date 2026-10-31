@@ -31,7 +31,8 @@ Before pressing **Record** on OBS Studio, Zoom, or Xbox Game Bar (`Win + G`), pr
    - `routes/auth.js` (Virtual Identity & bcrypt Auth)
    - `services/bananaApi.js` (Interoperability & Procedural Fallback)
    - `database.js` (SQLite 3-Table Schema & Persistence)
-   - `public/app.js` (Tier 1 Event-Driven Presentation Layer)
+   - `public/app.js` (Tier 1 Event-Driven Presentation Layer & Tutorial)
+   - `test_suite.js` (Automated 14-Step Integration Test Suite)
 4. **Audio & Video Check:** Ensure your microphone is clear, and speak in your **authentic, confident voice** at a steady, conversational pace.
 
 ---
@@ -40,77 +41,55 @@ Before pressing **Record** on OBS Studio, Zoom, or Xbox Game Bar (`Win + G`), pr
 
 ---
 
-### ⏱️ [0:00 – 1:45] PART 1: Executive Introduction & Live Application Walkthrough
+### ⏱️ [0:00 – 1:45] PART 1: Executive Introduction, Lobby & Interactive Tutorial Walkthrough
 
 #### 🎬 [SCREEN ACTION]
-* Display the browser at `http://localhost:3000`. Show the dark glassmorphic **Enterprise Player Portal**.
+* Display the browser at `http://localhost:3000`. Show the warm cream **Enterprise Player Portal**.
 * Show the **Register** tab: enter a new username (e.g., `Utsab`), email `utsab@example.com`, and password `password123`.
-* Click **Create Account & Play** (the screen smoothly transitions into the **Game HUD**).
+* Click **Create Account & Play** (the screen smoothly transitions into the **Game Home Screen / Lobby**).
+* Point to the friendly banana mascot, the title *"Ready for a Brain Challenge?"*, and the dynamic Player Stat cards: **Best Score**, **Current Rank** (`Banana Rookie`), and **Total Games**.
+* Scroll down slightly to highlight the **"How to Play"** 4-step illustrated section and click the **Interactive Tutorial** button.
+* Step through the tutorial:
+  - Step 1: Mascot introduction. Click **Next: Spot the Banana →**.
+  - Step 2: Algebraic deduction explanation (`5 + 🍌 = 9`). Click **Next: Practice Keypad →**.
+  - Step 3: Interactive practice stage. Tap digit `4` on the keypad: show the green success checkmark and click **Continue to Victory →**.
+  - Step 4: Confetti celebration and victory tips. Click **Play Real Puzzle! 🚀** (modal closes and seamlessly opens the Game Arena).
 
 #### 🗣️ [WHAT TO SAY]
 > *"Hello everyone, and welcome. My name is Utsab, and this is my video presentation for Assignment 1 of CIS046-3: Software for Enterprise at the University of Bedfordshire.*
 >
-> *Today, I am demonstrating my Enterprise Banana Challenge System—a distributed, 3-tier enterprise web application developed with Node.js, Express, a modular service-oriented architecture, Vanilla JavaScript, and an ACID-compliant SQLite relational database.*
+> *Today, I am demonstrating my Enterprise Banana Challenge System—a distributed, 3-tier casual arcade math puzzle application developed with Node.js, Express, a modular service-oriented architecture, Vanilla JavaScript, and an ACID-compliant SQLite relational database.*
 >
-> *As you can see on screen, we begin at Tier 1 with our modern, glassmorphic Enterprise Player Portal. The system provides secure user registration with unique emails and salted password hashing using bcrypt. When I register or sign in, the server establishes an authenticated, persistent virtual identity session over stateless HTTP using secure HTTP-only cookies."*
-
-#### 🎬 [SCREEN ACTION]
-* Point cursor to the **Top HUD**: Player Name (`Utsab`), Avatar (`🍌`), Title (`Banana Rookie`), Score (`0`), Streak (`0x`), and High Score.
-* Point to the **Difficulty Mode Selector**: Toggle between **Easy** (casual, untimed), **Medium** (25s timer), and **Hard** (12s speed mode, 2x points, -5 penalty). Leave it on **Medium**.
-* Show the algebraic puzzle dynamically loaded from **Dr. Marc Conrad’s Banana API**.
-* Click digit `7` (or the correct answer) on the on-screen keypad and click **Submit Answer**.
-* Point out the green celebration glow, streak bonus increment (1x), score update (+20 pts), and Web Audio chime.
-
-#### 🗣️ [WHAT TO SAY]
-> *"Here on the game dashboard, our real-time Head-Up Display reflects my player identity, custom emoji avatar, rank title, live score, and consecutive streak counter.*
+> *As you can see on screen, we begin at Tier 1 with our modern, warm cream Player Portal. The system provides secure user registration with unique emails and salted password hashing using bcrypt. When I register or sign in, the server establishes an authenticated, persistent virtual identity session over stateless HTTP using secure HTTP-only cookies.*
 >
-> *We have engineered three distinct game difficulty modes: Easy with no countdown pressure, Medium with a 25-second limit, and Hard—an intense 12-second speed challenge with double points and penalty deductions.*
->
-> *The visual puzzle before us is fetched in real time from Dr. Marc Conrad's external Banana API. I can input my deduction using the on-screen virtual keypad or physical keyboard numbers. Let's submit our answer... and as you can hear and see, the server validates the solution, triggers an emerald celebration pulse, plays an audio chime, and updates our live score."*
-
-#### 🎬 [SCREEN ACTION]
-* Click **Profile** in the navbar to open the modal: change your avatar to `👑` and select a title like `Monkey Sensei` or `Puzzle Master`. Click **Save Profile**.
-* Click **Achievements** in the navbar: show the unlocked badges (e.g. `First Bite 🍌`) and locked progression targets. Close modal.
-* Scroll down to show the **SQLite Global Leaderboard** with avatar badges and the **My Audit Trail** tab showing every recorded round attempt with exact timestamps.
-* Press **F5 (Refresh)** to show the page instantly reload with player identity, avatar, streak, and high score 100% intact!
-
-#### 🗣️ [WHAT TO SAY]
-> *"Players can personalize their virtual identity by choosing custom avatar emojis and equipping earned honorific titles. In the Achievements modal, milestones such as 'First Bite', 'Streak Master', and 'Speed Demon' track long-term player progression.*
->
-> *Below the game board, the SQLite-backed Global Leaderboard ranks top players worldwide, while the Audit Trail provides an immutable record of every guess, server solution, and timestamp.*
->
-> *Even if I refresh the browser, our session restoration instantly rehydrates our profile, score, and state.*
->
-> *Now, let us examine how this system fulfills the four core computer science themes demanded by enterprise software engineering."*
+> *Upon logging in, players are welcomed by the Game Home Screen—a central arcade hub featuring a friendly mascot, real-time stat cards, and an educational 'How to Play' guide. We have implemented an interactive 4-step walkthrough tutorial where players can learn algebraic deduction and practice with an interactive numerical keypad. Completing the tutorial triggers victory confetti and smoothly transitions us straight into the Game Arena."*
 
 ---
 
-### ⏱️ [1:45 – 3:30] PART 2: Theme 1 — Version Control, Code Hygiene & Modular Architecture
+### ⏱️ [1:45 – 3:30] PART 2: Live Gameplay, Difficulty Modes & Version Control Architecture
 
 #### 🎬 [SCREEN ACTION]
+* Show the **Top HUD**: Player Name (`Utsab`), Avatar (`🍌`), Title (`Banana Rookie`), Score, and Streak.
+* Point to the **Difficulty Mode Selector**: Toggle between **Easy** (casual, untimed), **Medium** (25s timer), and **Hard** (12s speed mode, 2x points, -5 penalty). Leave it on **Medium**.
+* Show the algebraic puzzle dynamically loaded from **Dr. Marc Conrad’s Banana API**.
+* Click the correct answer digit on the virtual keypad (or type on physical keyboard) and click **Submit Answer**.
+* Point out the green celebration glow, streak bonus increment, score update (+20 pts), and Web Audio chime.
 * Switch to the terminal in VS Code.
-* Type and run: `git log --graph --oneline -n 6`
-* Point out the latest commits, highlighting:
-  - `feat: modularize backend into routes, services, and middleware architecture`
-  - `feat: add game modes, sound effects, achievements, and player profiles`
-* Open [`.gitignore`](file:///c:/Users/utsab/OneDrive/Desktop/Banana%20Game/.gitignore) in VS Code.
-* Open the file tree in VS Code and show the clean modular folders:
-  - `routes/` (`auth.js`, `game.js`, `user.js`)
-  - `services/` (`bananaApi.js`)
-  - `middleware/` (`auth.js`)
-  - `database.js`
-  - `server.js`
+* Run `git log --graph --oneline -n 6` to show semantic conventional commits.
+* Run `npm test` and show all 14 integration test assertions passing with 100% success!
 
 #### 🗣️ [WHAT TO SAY]
-> *"The first core theme is Version Control and Code Hygiene. In enterprise software engineering, version control is not merely a backup utility; it is a collaborative audit trail, feature branch workflow, and continuous delivery pipeline.*
+> *"Here on the game board, our real-time Head-Up Display reflects my player identity, custom emoji avatar, rank title, live score, and consecutive streak counter.*
 >
-> *As shown in my Git log, all development strictly adheres to semantic conventional commits—utilizing structured prefixes such as 'feat:', 'fix:', 'refactor:', and 'chore:'. Work was isolated across modular branches before merging cleanly into main on GitHub.*
+> *We have engineered three distinct game difficulty modes: Easy with no countdown pressure, Medium with a 25-second limit, and Hard—an intense 12-second speed challenge with double points and penalty deductions.*
 >
-> *In our .gitignore file, we enforce rigorous repository hygiene. Sensitive environment variables, debug logs, OS metadata, and node_modules are strictly quarantined.*
+> *The visual puzzle before us is fetched in real time from Dr. Marc Conrad's external Banana API. I can input my deduction using the on-screen keypad or physical keyboard. When we submit, the server validates the solution, triggers an emerald celebration pulse, plays an audio chime, and updates our live score.*
 >
-> *Notice also that our SQLite database directory—data/ and all .sqlite files—are intentionally untracked. This prevents binary database bloating in Git and ensures that any developer cloning the repository from GitHub can run 'npm install' and 'npm start' to auto-generate a fresh, pristine database schema.*
+> *Now, looking at our first core theme—Version Control and Code Quality—our development strictly adheres to semantic conventional commits with structured prefixes like 'feat:', 'fix:', 'refactor:', and 'chore:'.*
 >
-> *Furthermore, rather than maintaining a monolithic server file with over 800 lines, we refactored our backend into an enterprise modular architecture. We extracted discrete concerns into a routes directory, a bananaApi service layer, and an authentication middleware, reducing our primary server.js to a lean 118-line application orchestrator."*
+> *In our terminal, running 'npm test' executes our comprehensive 14-step integration test suite, validating authentication, database transactions, anti-cheat vaulting, and difficulty modes with 100% pass rates.*
+>
+> *In .gitignore, sensitive environment variables, debug logs, and SQLite database binaries are strictly quarantined, ensuring any developer can clone the repository and auto-initialize a clean database schema from scratch."*
 
 ---
 
@@ -118,7 +97,8 @@ Before pressing **Record** on OBS Studio, Zoom, or Xbox Game Bar (`Win + G`), pr
 
 #### 🎬 [SCREEN ACTION]
 * Open [`public/app.js`](file:///c:/Users/utsab/OneDrive/Desktop/Banana%20Game/public/app.js) in VS Code.
-* Highlight lines around `setupEventListeners()`, `selectDigit()`, `startCountdown()`, and the keyboard listener `window.addEventListener('keydown', ...)`.
+* Highlight `initEvents()`, `selectDigit()`, `TutorialController`, and the keyboard listener `window.addEventListener('keydown', ...)`.
+* Highlight the `SoundFX` Web Audio API procedural synthesis functions (`click()`, `correct()`, `wrong()`, `achievement()`).
 * Switch to [`server.js`](file:///c:/Users/utsab/OneDrive/Desktop/Banana%20Game/server.js) and [`routes/game.js`](file:///c:/Users/utsab/OneDrive/Desktop/Banana%20Game/routes/game.js).
 * Highlight `router.post('/submit-answer', ...)` and asynchronous Express middleware handling.
 
@@ -127,9 +107,7 @@ Before pressing **Record** on OBS Studio, Zoom, or Xbox Game Bar (`Win + G`), pr
 >
 > *Unlike legacy procedural software that relies on blocking loops or continuous polling, our Tier 1 client in app.js is purely reactive. When the DOM loads, it attaches asynchronous event listeners for form submissions, keypad interactions, modal toggles, and physical keyboard navigation—allowing players to use digits 0 through 9, Enter to submit, and Escape to dismiss modals.*
 >
-> *Our game difficulty modes also feature an active countdown timer driven by non-blocking interval tick events. When time expires, a timeout event is dispatched to the server to handle score penalties gracefully.*
->
-> *Every user action dispatches asynchronous HTTP fetch requests using modern JavaScript Promises and async/await. While network traffic is in flight, non-blocking UI loaders and CSS skeletons keep the browser responsive.*
+> *Our game also features zero-dependency procedural Web Audio synthesis. Rather than loading heavy external MP3 audio files over the network, our SoundFX engine uses the native Web Audio API to procedurally generate sound waves—including harmonic C5-G5 arpeggios for correct answers and tactile feedback for keypad taps.*
 >
 > *On Tier 2, Node.js uses its single-threaded, non-blocking Event Loop powered by libuv. Every incoming HTTP request is delegated asynchronously through our Express middleware pipeline, allowing the server to handle high concurrency with minimal CPU and memory overhead."*
 
@@ -141,7 +119,7 @@ Before pressing **Record** on OBS Studio, Zoom, or Xbox Game Bar (`Win + G`), pr
 * Open [`services/bananaApi.js`](file:///c:/Users/utsab/OneDrive/Desktop/Banana%20Game/services/bananaApi.js) in VS Code.
 * Highlight `fetchBananaPuzzle()` (with `BANANA_API_URL`, `API_TIMEOUT_MS = 5000`, `AbortController`).
 * Highlight the `FALLBACK_PUZZLES` array with embedded procedural SVG puzzles.
-* Open [`routes/game.js`](file:///c:/Users/utsab/OneDrive/Desktop/Banana%20Game/routes/game.js) and highlight lines 63–76 where `req.session.currentSolution = puzzle.solution` is vaulted, and only `question` is returned.
+* Open [`routes/game.js`](file:///c:/Users/utsab/OneDrive/Desktop/Banana%20Game/routes/game.js) and highlight where `req.session.currentSolution = puzzle.solution` is vaulted, and only `question` is returned.
 * Switch to the browser, open **DevTools > Network tab** (filtered to `Fetch/XHR`).
 * Click **Skip Puzzle** to trigger `GET /api/game/new-puzzle`.
 * Click on `/api/game/new-puzzle` in the Network list and open the **Response** preview.
@@ -169,11 +147,14 @@ Before pressing **Record** on OBS Studio, Zoom, or Xbox Game Bar (`Win + G`), pr
 * Click on `connect.sid`. Show the **HttpOnly** checkbox checked, and **SameSite = Lax**.
 * Switch to VS Code and open [`routes/auth.js`](file:///c:/Users/utsab/OneDrive/Desktop/Banana%20Game/routes/auth.js) and [`routes/user.js`](file:///c:/Users/utsab/OneDrive/Desktop/Banana%20Game/routes/user.js).
 * Open [`database.js`](file:///c:/Users/utsab/OneDrive/Desktop/Banana%20Game/database.js).
-* Scroll to `initDatabase()` and highlight the 3 relational tables:
+* Scroll to `initDatabase()` and highlight the 4 relational tables:
   1. `users` (id, username, email, password_hash, avatar, title, high_score)
-  2. `game_history` (round audit log with foreign key to users)
-  3. `user_achievements` (unlocked milestones with foreign key to users)
+  2. `round_history` (round audit log with foreign key to users)
+  3. `achievements` (milestone rules and definitions)
+  4. `user_achievements` (unlocked milestones with foreign key to users)
 * Highlight the SQL indexes: `idx_users_high_score` and `idx_user_achievements_user`.
+* Switch back to the browser: click **Leaderboard** to show live global rankings, then open **Audit Trail** to show match history.
+* Press **F5 (Refresh)** to show the session restoring profile and scores instantly.
 
 #### 🗣️ [WHAT TO SAY]
 > *"Our fourth theme is Virtual Identity. The HTTP protocol is inherently stateless; every request arrives without memory of preceding interactions.*
@@ -184,10 +165,10 @@ Before pressing **Record** on OBS Studio, Zoom, or Xbox Game Bar (`Win + G`), pr
 >
 > *In routes/auth.js and database.js, player passwords are never stored in plaintext—they are hashed using bcrypt with salt rounds. User profiles in routes/user.js allow players to customize their virtual identity with avatars and honorific titles.*
 >
-> *To elevate our application to enterprise data integrity, database.js implements an embedded SQLite relational database with full ACID guarantees. It manages three relational tables:*
+> *To elevate our application to enterprise data integrity, database.js implements an embedded SQLite relational database with full ACID guarantees. It manages four relational tables:*
 > *First, the 'users' table, storing player identities, email addresses, password hashes, and high scores, optimized with a descending high_score index for instant leaderboard queries.*
-> *Second, the 'game_history' table, creating an immutable audit trail of every puzzle attempted, recording the player's guess, the server solution, and the timestamp.*
-> *Third, the 'user_achievements' table, maintaining relational milestone trophies linked via foreign keys with cascade deletions.*
+> *Second, the 'round_history' table, creating an immutable audit trail of every puzzle attempted, recording the player's guess, the server solution, and the timestamp.*
+> *Third, the 'achievements' and 'user_achievements' tables, maintaining relational milestone trophies linked via foreign keys.*
 >
 > *This ensures that even if the server is stopped and restarted, player identities, credentials, custom titles, achievements, and leaderboard rankings remain permanently preserved."*
 
@@ -203,8 +184,8 @@ Before pressing **Record** on OBS Studio, Zoom, or Xbox Game Bar (`Win + G`), pr
 
 #### 🗣️ [WHAT TO SAY]
 > *"To conclude, this Enterprise Banana Challenge System demonstrates a robust, complete synthesis of all four core enterprise software themes:*
-> 1. *Version Control with disciplined Git branching, semantic commits, and modular architecture,*
-> 2. *Event-Driven Programming powering a responsive client and asynchronous Express server,*
+> 1. *Version Control with disciplined Git branching, semantic commits, automated integration testing, and modular architecture,*
+> 2. *Event-Driven Programming powering a responsive client, Web Audio synthesis, and asynchronous Express server,*
 > 3. *Interoperability with Dr. Marc Conrad's REST API backed by anti-cheat solution vaulting and SVG fallback resilience, and*
 > 4. *Virtual Identity supported by session cryptography, bcrypt password hashing, and SQLite relational persistence.*
 >

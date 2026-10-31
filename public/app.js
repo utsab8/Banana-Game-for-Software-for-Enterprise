@@ -49,6 +49,27 @@ const DOM = {
   homeBestScoreCardTrigger: document.getElementById('home-best-score-card-trigger'),
   homeTotalGamesCardTrigger: document.getElementById('home-total-games-card-trigger'),
 
+  // Tutorial Elements
+  startTutorialBtn: document.getElementById('start-tutorial-btn'),
+  settingsTutorialBtn: document.getElementById('settings-tutorial-btn'),
+  tutorialModal: document.getElementById('tutorial-modal'),
+  tutorialCloseBtn: document.getElementById('tutorial-close-btn'),
+  tutStepSubtitle: document.getElementById('tut-step-subtitle'),
+  tutSlides: [
+    document.getElementById('tut-slide-1'),
+    document.getElementById('tut-slide-2'),
+    document.getElementById('tut-slide-3'),
+    document.getElementById('tut-slide-4')
+  ],
+  tutDots: document.querySelectorAll('.tut-step-dot'),
+  tutBtnSkip: document.getElementById('tut-btn-skip'),
+  tutBtnPrev: document.getElementById('tut-btn-prev'),
+  tutBtnNext: document.getElementById('tut-btn-next'),
+  tutBtnFinish: document.getElementById('tut-btn-finish'),
+  tutKeyBtns: document.querySelectorAll('.tut-key-btn'),
+  tutSelectedVal: document.getElementById('tut-selected-val'),
+  tutFeedbackHint: document.getElementById('tut-feedback-hint'),
+
   // Gameplay Navigation & Results Actions
   gameBackHomeBtn: document.getElementById('game-back-home-btn'),
   nextPuzzleBtn: document.getElementById('next-puzzle-btn'),
@@ -1108,6 +1129,266 @@ async function handleAnswerSubmit() {
 }
 
 // -----------------------------------------------------------------------------
+// Interactive Tutorial Walkthrough Controller
+// -----------------------------------------------------------------------------
+const TutorialController = {
+  currentStep: 1,
+  selectedDigit: null,
+  isSolved: false,
+  _lastNextTime: 0,
+  _lastPrevTime: 0,
+  _lastFinishTime: 0,
+
+  open(startStep = 1) {
+    const modal = document.getElementById('tutorial-modal') || DOM.tutorialModal;
+    if (!modal) return;
+    this.currentStep = startStep;
+    this.selectedDigit = null;
+    this.isSolved = false;
+
+    const selectedVal = document.getElementById('tut-selected-val');
+    if (selectedVal) selectedVal.textContent = '?';
+
+    const hint = document.getElementById('tut-feedback-hint');
+    if (hint) {
+      hint.className = 'tut-feedback-hint hidden';
+      hint.style.display = 'none';
+      hint.textContent = '';
+    }
+
+    const keyBtns = document.querySelectorAll('.tut-key-btn');
+    keyBtns.forEach((btn) => btn.classList.remove('correct', 'active'));
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    this.renderStep(startStep);
+    SoundFX.click();
+  },
+
+  close() {
+    const modal = document.getElementById('tutorial-modal') || DOM.tutorialModal;
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  },
+
+  next(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const now = Date.now();
+    if (now - this._lastNextTime < 250) return;
+    this._lastNextTime = now;
+
+    SoundFX.click();
+
+    // If on Step 4 (or beyond), advance completes the tutorial and launches real gameplay
+    if (this.currentStep >= 4) {
+      this.finish(e);
+      return;
+    }
+
+    // Step 3 interactive keypad logic
+    if (this.currentStep === 3) {
+      if (!this.isSolved) {
+        const hint = document.getElementById('tut-feedback-hint');
+        if (hint) {
+          hint.className = 'tut-feedback-hint wrong';
+          hint.innerHTML = '<i class="fa-solid fa-hand-pointer"></i> Tap the digit <strong>4</strong> on the keypad to solve 5 + ? = 9!';
+          hint.classList.remove('hidden');
+          hint.style.display = 'block';
+        }
+        return;
+      }
+      // If solved and user taps "Continue to Victory"
+      if (this._advanceTimeout) clearTimeout(this._advanceTimeout);
+      this.renderStep(4);
+      return;
+    }
+
+    if (this.currentStep < 4) {
+      this.renderStep(this.currentStep + 1);
+    }
+  },
+
+  prev(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const now = Date.now();
+    if (now - this._lastPrevTime < 250) return;
+    this._lastPrevTime = now;
+
+    if (this._advanceTimeout) clearTimeout(this._advanceTimeout);
+    SoundFX.click();
+    if (this.currentStep > 1) {
+      this.renderStep(this.currentStep - 1);
+    }
+  },
+
+  finish(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const now = Date.now();
+    if (now - this._lastFinishTime < 250) return;
+    this._lastFinishTime = now;
+
+    if (this._advanceTimeout) clearTimeout(this._advanceTimeout);
+    SoundFX.click();
+    this.close();
+    switchView('game');
+    loadNewPuzzle();
+  },
+
+  renderStep(step) {
+    this.currentStep = step;
+
+    const titles = [
+      'Step 1 of 4: How Banana Math Works',
+      'Step 2 of 4: Spotting the Missing Banana',
+      'Step 3 of 4: Interactive Practice Keypad',
+      'Step 4 of 4: Mastered & Ready to Play!'
+    ];
+    const subtitle = document.getElementById('tut-step-subtitle') || DOM.tutStepSubtitle;
+    if (subtitle) {
+      subtitle.textContent = titles[step - 1] || `Step ${step} of 4`;
+    }
+
+    // Toggle slide visibility explicitly with both class and inline style
+    const slides = [
+      document.getElementById('tut-slide-1'),
+      document.getElementById('tut-slide-2'),
+      document.getElementById('tut-slide-3'),
+      document.getElementById('tut-slide-4')
+    ];
+    slides.forEach((slide, idx) => {
+      if (slide) {
+        if (idx === step - 1) {
+          slide.classList.remove('hidden');
+          slide.style.display = 'block';
+        } else {
+          slide.classList.add('hidden');
+          slide.style.display = 'none';
+        }
+      }
+    });
+
+    // Toggle stepper dots
+    const dots = document.querySelectorAll('.tut-step-dot');
+    dots.forEach((dot) => {
+      const dotStep = parseInt(dot.dataset.step, 10);
+      dot.classList.toggle('active', dotStep <= step);
+    });
+
+    const nextBtn = document.getElementById('tut-btn-next');
+    const prevBtn = document.getElementById('tut-btn-prev');
+    const finishBtn = document.getElementById('tut-btn-finish');
+    const skipBtn = document.getElementById('tut-btn-skip');
+
+    if (prevBtn) {
+      if (step > 1) {
+        prevBtn.classList.remove('hidden');
+        prevBtn.style.display = 'inline-flex';
+      } else {
+        prevBtn.classList.add('hidden');
+        prevBtn.style.display = 'none';
+      }
+    }
+
+    if (nextBtn) {
+      nextBtn.classList.remove('hidden');
+      nextBtn.style.display = 'inline-flex';
+
+      if (step === 1) {
+        nextBtn.className = 'btn btn-game-primary btn-tut-next';
+        nextBtn.innerHTML = '<span>Next: Spot the Banana</span> <i class="fa-solid fa-arrow-right"></i>';
+      } else if (step === 2) {
+        nextBtn.className = 'btn btn-game-primary btn-tut-next';
+        nextBtn.innerHTML = '<span>Next: Practice Keypad</span> <i class="fa-solid fa-arrow-right"></i>';
+      } else if (step === 3) {
+        nextBtn.className = 'btn btn-game-primary btn-tut-next';
+        nextBtn.innerHTML = this.isSolved
+          ? '<span>Continue to Victory</span> <i class="fa-solid fa-arrow-right"></i>'
+          : '<span>Check &amp; Continue</span> <i class="fa-solid fa-arrow-right"></i>';
+      } else if (step === 4) {
+        // Step 4: Morphs into the final action button
+        nextBtn.className = 'btn btn-tut-finish';
+        nextBtn.innerHTML = '<span>Play Real Puzzle! 🚀</span>';
+      }
+    }
+
+    if (finishBtn) {
+      // Keep finishBtn hidden so single morphing button provides a clean, unified experience
+      finishBtn.classList.add('hidden');
+      finishBtn.style.display = 'none';
+    }
+
+    if (skipBtn) {
+      skipBtn.textContent = step === 4 ? 'Close' : 'Skip Tutorial';
+    }
+
+    // Step 4 victory triggers
+    if (step === 4) {
+      localStorage.setItem('banana_tutorial_completed', 'true');
+      SoundFX.achievement();
+      launchCelebrationConfetti();
+    }
+  },
+
+  handleDigitSelect(digit) {
+    if (this.currentStep !== 3) return;
+    this.selectedDigit = digit;
+
+    const selectedVal = document.getElementById('tut-selected-val');
+    if (selectedVal) {
+      selectedVal.textContent = digit;
+    }
+
+    const keyBtns = document.querySelectorAll('.tut-key-btn');
+    keyBtns.forEach((btn) => {
+      btn.classList.toggle('active', parseInt(btn.dataset.digit, 10) === digit);
+    });
+
+    const hint = document.getElementById('tut-feedback-hint');
+    const nextBtn = document.getElementById('tut-btn-next');
+
+    // Correct deduction for 5 + ? = 9 is 4
+    if (digit === 4) {
+      this.isSolved = true;
+      SoundFX.correct();
+
+      if (hint) {
+        hint.className = 'tut-feedback-hint correct';
+        hint.style.display = 'block';
+        hint.innerHTML = '<i class="fa-solid fa-circle-check"></i> Exactly right! 5 + 4 = 9!';
+      }
+
+      const activeBtn = Array.from(keyBtns).find((b) => parseInt(b.dataset.digit, 10) === 4);
+      if (activeBtn) activeBtn.classList.add('correct');
+
+      if (nextBtn) {
+        nextBtn.classList.remove('hidden');
+        nextBtn.className = 'btn btn-game-primary btn-tut-next';
+        nextBtn.style.display = 'inline-flex';
+        nextBtn.innerHTML = '<span>Continue to Victory</span> <i class="fa-solid fa-arrow-right"></i>';
+      }
+
+      if (this._advanceTimeout) clearTimeout(this._advanceTimeout);
+      this._advanceTimeout = setTimeout(() => {
+        if (this.currentStep === 3 && this.isSolved) {
+          this.renderStep(4);
+        }
+      }, 1200);
+    } else {
+      SoundFX.wrong();
+      if (hint) {
+        hint.className = 'tut-feedback-hint wrong';
+        hint.style.display = 'block';
+        hint.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 5 + ${digit} = ${5 + digit}. We need 9! Try another number.`;
+      }
+    }
+  }
+};
+
+// Expose globally for inline and external invocation
+window.TutorialController = TutorialController;
+
+// -----------------------------------------------------------------------------
 // Setup Event Listeners (Theme 2: Event-Driven Programming)
 // -----------------------------------------------------------------------------
 function initEvents() {
@@ -1716,6 +1997,88 @@ function initEvents() {
         if (!SoundFX.isMuted) SoundFX.click();
       });
     }
+  }
+
+  // 14. Interactive Tutorial Event Listeners
+  if (DOM.startTutorialBtn) {
+    DOM.startTutorialBtn.onclick = (e) => {
+      if (e) e.preventDefault();
+      TutorialController.open();
+    };
+  }
+
+  if (DOM.settingsTutorialBtn) {
+    DOM.settingsTutorialBtn.onclick = (e) => {
+      if (e) e.preventDefault();
+      if (DOM.settingsModal) DOM.settingsModal.classList.add('hidden');
+      TutorialController.open();
+    };
+  }
+
+  if (DOM.tutorialCloseBtn) {
+    DOM.tutorialCloseBtn.onclick = (e) => {
+      if (e) e.preventDefault();
+      SoundFX.click();
+      TutorialController.close();
+    };
+  }
+
+  if (DOM.tutBtnSkip) {
+    DOM.tutBtnSkip.onclick = (e) => {
+      if (e) e.preventDefault();
+      SoundFX.click();
+      TutorialController.close();
+    };
+  }
+
+  if (DOM.tutBtnPrev) {
+    DOM.tutBtnPrev.onclick = (e) => {
+      if (e) e.preventDefault();
+      TutorialController.prev(e);
+    };
+  }
+
+  if (DOM.tutBtnNext) {
+    DOM.tutBtnNext.onclick = (e) => {
+      if (e) e.preventDefault();
+      TutorialController.next(e);
+    };
+  }
+
+  if (DOM.tutBtnFinish) {
+    DOM.tutBtnFinish.onclick = (e) => {
+      if (e) e.preventDefault();
+      TutorialController.finish(e);
+    };
+  }
+
+  if (DOM.tutorialModal) {
+    DOM.tutorialModal.onclick = (e) => {
+      if (e.target === DOM.tutorialModal) {
+        TutorialController.close();
+      }
+    };
+  }
+
+  if (DOM.tutKeyBtns && DOM.tutKeyBtns.length > 0) {
+    DOM.tutKeyBtns.forEach((btn) => {
+      btn.onclick = (e) => {
+        if (e) e.preventDefault();
+        const digit = parseInt(btn.dataset.digit, 10);
+        TutorialController.handleDigitSelect(digit);
+      };
+    });
+  }
+
+  if (DOM.tutDots && DOM.tutDots.length > 0) {
+    DOM.tutDots.forEach((dot) => {
+      dot.onclick = (e) => {
+        if (e) e.preventDefault();
+        const step = parseInt(dot.dataset.step, 10);
+        SoundFX.click();
+        TutorialController.renderStep(step);
+      };
+    });
   }
 }
 
