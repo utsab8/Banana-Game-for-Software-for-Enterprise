@@ -90,7 +90,9 @@ router.post('/register', async (req, res) => {
       score: userRecord.score || 0,
       streak: userRecord.streak || 0,
       highScore: userRecord.high_score || 0,
+      high_score: userRecord.high_score || 0,
       roundsPlayed: userRecord.rounds_played || 0,
+      rounds_played: userRecord.rounds_played || 0,
       sessionStarted: new Date().toISOString()
     };
     req.session.currentSolution = null;
@@ -152,7 +154,9 @@ router.post('/login', async (req, res) => {
         score: dbUser.score || 0,
         streak: dbUser.streak || 0,
         highScore: dbUser.high_score || 0,
+        high_score: dbUser.high_score || 0,
         roundsPlayed: dbUser.rounds_played || 0,
+        rounds_played: dbUser.rounds_played || 0,
         sessionStarted: new Date().toISOString()
       };
       req.session.currentSolution = null;
@@ -185,7 +189,9 @@ router.post('/login', async (req, res) => {
       score: dbUser.score || 0,
       streak: dbUser.streak || 0,
       highScore: dbUser.high_score || 0,
+      high_score: dbUser.high_score || 0,
       roundsPlayed: dbUser.rounds_played || 0,
+      rounds_played: dbUser.rounds_played || 0,
       sessionStarted: new Date().toISOString()
     };
     req.session.currentSolution = null;
@@ -210,10 +216,27 @@ router.post('/login', async (req, res) => {
 
 /**
  * GET /api/auth/me
- * Checks if the incoming request has an active session cookie
+ * Checks if the incoming request has an active session cookie and synchronizes latest SQLite data
  */
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   if (req.session && req.session.user) {
+    if (req.session.user.id) {
+      try {
+        const freshUser = await db.getUserById(req.session.user.id);
+        if (freshUser) {
+          req.session.user.score = freshUser.score ?? req.session.user.score;
+          req.session.user.streak = freshUser.streak ?? req.session.user.streak;
+          req.session.user.highScore = freshUser.high_score ?? req.session.user.highScore;
+          req.session.user.high_score = freshUser.high_score ?? req.session.user.high_score;
+          req.session.user.roundsPlayed = freshUser.rounds_played ?? req.session.user.roundsPlayed;
+          req.session.user.rounds_played = freshUser.rounds_played ?? req.session.user.rounds_played;
+          req.session.user.avatar = freshUser.avatar || req.session.user.avatar;
+          req.session.user.title = freshUser.title || req.session.user.title;
+        }
+      } catch (err) {
+        console.warn('[Session Sync Warning in /me]', err.message);
+      }
+    }
     return res.json({
       authenticated: true,
       user: req.session.user

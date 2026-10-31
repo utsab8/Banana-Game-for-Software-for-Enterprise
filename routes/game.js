@@ -310,7 +310,9 @@ router.post('/submit-answer', requireAuth, async (req, res) => {
         score: user.score,
         streak: user.streak,
         highScore: user.highScore,
-        roundsPlayed: user.roundsPlayed
+        high_score: user.highScore,
+        roundsPlayed: user.roundsPlayed,
+        rounds_played: user.roundsPlayed
       }
     });
   });
@@ -349,7 +351,9 @@ router.post('/reset', requireAuth, async (req, res) => {
         score: user.score,
         streak: user.streak,
         highScore: user.highScore,
-        roundsPlayed: user.roundsPlayed
+        high_score: user.highScore,
+        roundsPlayed: user.roundsPlayed,
+        rounds_played: user.roundsPlayed
       }
     });
   });

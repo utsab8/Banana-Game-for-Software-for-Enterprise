@@ -317,7 +317,7 @@
       <!-- Player Statistics Overview Row (3 Cards) -->
       <div class="home-stats-row">
         <!-- Stat 1: Best Score -->
-        <div class="home-stat-card card-stat-score">
+        <div class="home-stat-card card-stat-score" id="home-best-score-card-trigger" title="Click to view Leaderboard rankings" style="cursor: pointer;">
           <div class="home-stat-icon-box icon-trophy">
             <i class="fa-solid fa-crown"></i>
           </div>
@@ -327,6 +327,7 @@
               <span id="home-stat-best" class="home-stat-val mono-val">0</span>
               <span class="home-stat-unit">pts</span>
             </div>
+            <span class="home-stat-sub">Tap to view leaderboard</span>
           </div>
         </div>
 
@@ -343,7 +344,7 @@
         </div>
 
         <!-- Stat 3: Total Games / Rounds Played -->
-        <div class="home-stat-card card-stat-rounds">
+        <div class="home-stat-card card-stat-rounds" id="home-total-games-card-trigger" title="Click to view your match history" style="cursor: pointer;">
           <div class="home-stat-icon-box icon-target">
             <i class="fa-solid fa-bullseye"></i>
           </div>
@@ -353,6 +354,7 @@
               <span id="home-stat-rounds" class="home-stat-val mono-val">0</span>
               <span class="home-stat-unit">rounds</span>
             </div>
+            <span class="home-stat-sub">Tap to view round history</span>
           </div>
         </div>
       </div>

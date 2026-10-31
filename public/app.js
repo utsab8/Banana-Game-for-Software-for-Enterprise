@@ -46,6 +46,8 @@ const DOM = {
   homeViewAchievementsBtn: document.getElementById('home-view-achievements-btn'),
   homeModeBtns: document.querySelectorAll('.home-mode-btn'),
   homeLevelCardTrigger: document.getElementById('home-level-card-trigger'),
+  homeBestScoreCardTrigger: document.getElementById('home-best-score-card-trigger'),
+  homeTotalGamesCardTrigger: document.getElementById('home-total-games-card-trigger'),
 
   // Gameplay Navigation & Results Actions
   gameBackHomeBtn: document.getElementById('game-back-home-btn'),
@@ -285,8 +287,8 @@ function updateHUD(user) {
   DOM.hudPlayerName.textContent = user.username;
   DOM.hudScore.textContent = user.score;
   DOM.hudStreak.textContent = `${user.streak}x`;
-  DOM.hudHighScore.textContent = user.highScore;
-  DOM.hudRounds.textContent = user.roundsPlayed;
+  DOM.hudHighScore.textContent = (user.highScore !== undefined) ? user.highScore : (user.high_score !== undefined ? user.high_score : 0);
+  DOM.hudRounds.textContent = (user.roundsPlayed !== undefined) ? user.roundsPlayed : (user.rounds_played !== undefined ? user.rounds_played : 0);
 
   const avatar = user.avatar || '🍌';
   const title = user.title || 'Banana Rookie';
@@ -345,14 +347,22 @@ function switchView(view) {
   }
 }
 
-function updateHomeScreen() {
+async function updateHomeScreen() {
   if (!state.user) return;
+
+  const bestScore = (state.user.highScore !== undefined) 
+    ? state.user.highScore 
+    : (state.user.high_score !== undefined ? state.user.high_score : 0);
+
+  const totalRounds = (state.user.roundsPlayed !== undefined)
+    ? state.user.roundsPlayed
+    : (state.user.rounds_played !== undefined ? state.user.rounds_played : 0);
 
   if (DOM.homeWelcomeUser) {
     DOM.homeWelcomeUser.textContent = `WELCOME, ${state.user.username.toUpperCase()}!`;
   }
   if (DOM.homeStatBest) {
-    DOM.homeStatBest.textContent = state.user.high_score || 0;
+    DOM.homeStatBest.textContent = bestScore;
   }
   if (DOM.homeStatTitle) {
     DOM.homeStatTitle.textContent = state.user.title || 'Banana Rookie';
@@ -361,7 +371,7 @@ function updateHomeScreen() {
     DOM.homeStatAvatar.textContent = state.user.avatar || '🍌';
   }
   if (DOM.homeStatRounds) {
-    DOM.homeStatRounds.textContent = state.user.rounds_played || 0;
+    DOM.homeStatRounds.textContent = totalRounds;
   }
 
   // Sync mode buttons on home
@@ -372,6 +382,23 @@ function updateHomeScreen() {
   }
 
   loadAchievements();
+
+  // Asynchronously query live SQLite session state to ensure absolute data freshness
+  try {
+    const res = await api('/api/auth/me');
+    if (res.ok && res.data.authenticated && res.data.user) {
+      state.user = { ...(state.user || {}), ...res.data.user };
+      const freshBest = (state.user.highScore !== undefined) ? state.user.highScore : (state.user.high_score !== undefined ? state.user.high_score : 0);
+      const freshRounds = (state.user.roundsPlayed !== undefined) ? state.user.roundsPlayed : (state.user.rounds_played !== undefined ? state.user.rounds_played : 0);
+      if (DOM.homeStatBest) DOM.homeStatBest.textContent = freshBest;
+      if (DOM.homeStatRounds) DOM.homeStatRounds.textContent = freshRounds;
+      if (DOM.homeStatTitle) DOM.homeStatTitle.textContent = state.user.title || 'Banana Rookie';
+      if (DOM.homeStatAvatar) DOM.homeStatAvatar.textContent = state.user.avatar || '🍌';
+      updateHUD(state.user);
+    }
+  } catch (err) {
+    // Silently continue if network is briefly delayed
+  }
 }
 
 function selectDigit(digit) {
@@ -1571,10 +1598,36 @@ function initEvents() {
     });
   }
 
+  if (DOM.homeBestScoreCardTrigger) {
+    DOM.homeBestScoreCardTrigger.addEventListener('click', () => {
+      SoundFX.click();
+      if (DOM.leaderboardModal) {
+        DOM.leaderboardModal.classList.remove('hidden');
+        if (DOM.tabBtnLeaderboard) {
+          DOM.tabBtnLeaderboard.click();
+        }
+        loadLeaderboard();
+      }
+    });
+  }
+
   if (DOM.homeLevelCardTrigger) {
     DOM.homeLevelCardTrigger.addEventListener('click', () => {
       SoundFX.click();
       openProfileModal();
+    });
+  }
+
+  if (DOM.homeTotalGamesCardTrigger) {
+    DOM.homeTotalGamesCardTrigger.addEventListener('click', () => {
+      SoundFX.click();
+      if (DOM.leaderboardModal) {
+        DOM.leaderboardModal.classList.remove('hidden');
+        if (DOM.tabBtnHistory) {
+          DOM.tabBtnHistory.click();
+        }
+        loadUserHistory();
+      }
     });
   }
 

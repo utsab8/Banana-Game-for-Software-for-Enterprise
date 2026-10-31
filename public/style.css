@@ -2593,19 +2593,34 @@ body.game-app {
   gap: 1.15rem;
   box-shadow: var(--shadow-sm);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
 }
 
 .home-stat-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-card);
+  border-color: var(--primary);
 }
 
-.home-level-card {
-  cursor: pointer;
-}
-
-.home-level-card:hover {
+.card-stat-level:hover {
   border-color: var(--success);
+}
+
+.card-stat-rounds:hover {
+  border-color: var(--secondary);
+}
+
+.home-stat-sub {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-light);
+  margin-top: 0.15rem;
+  display: block;
+  transition: color 0.15s ease;
+}
+
+.home-stat-card:hover .home-stat-sub {
+  color: var(--secondary);
 }
 
 .home-stat-icon-box {

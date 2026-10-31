@@ -27,6 +27,12 @@ router.post('/profile', requireAuth, async (req, res) => {
     const updatedUser = await db.updateUserProfile(userId, { avatar, title });
     if (avatar) req.session.user.avatar = avatar;
     if (title) req.session.user.title = title;
+    if (updatedUser) {
+      req.session.user.highScore = updatedUser.high_score ?? req.session.user.highScore;
+      req.session.user.high_score = updatedUser.high_score ?? req.session.user.high_score;
+      req.session.user.roundsPlayed = updatedUser.rounds_played ?? req.session.user.roundsPlayed;
+      req.session.user.rounds_played = updatedUser.rounds_played ?? req.session.user.rounds_played;
+    }
 
     req.session.save((err) => {
       if (err) {
