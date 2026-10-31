@@ -30,7 +30,32 @@ const DOM = {
 
   // Panels
   authSection: document.getElementById('auth-section'),
+  homeSection: document.getElementById('home-section'),
   gameSection: document.getElementById('game-section'),
+
+  // Game Home Screen Elements
+  homePlayBtn: document.getElementById('home-play-btn'),
+  homeDailyBtn: document.getElementById('home-daily-btn'),
+  homeWelcomeUser: document.getElementById('home-welcome-user'),
+  homeStatBest: document.getElementById('home-stat-best'),
+  homeStatTitle: document.getElementById('home-stat-title'),
+  homeStatAvatar: document.getElementById('home-stat-avatar'),
+  homeStatRounds: document.getElementById('home-stat-rounds'),
+  homeTrophyCounter: document.getElementById('home-trophy-counter'),
+  homeAchievementsPreview: document.getElementById('home-achievements-preview'),
+  homeViewAchievementsBtn: document.getElementById('home-view-achievements-btn'),
+  homeModeBtns: document.querySelectorAll('.home-mode-btn'),
+  homeLevelCardTrigger: document.getElementById('home-level-card-trigger'),
+
+  // Gameplay Navigation & Results Actions
+  gameBackHomeBtn: document.getElementById('game-back-home-btn'),
+  nextPuzzleBtn: document.getElementById('next-puzzle-btn'),
+  resultHomeBtn: document.getElementById('result-home-btn'),
+  settingsNavBtn: document.getElementById('settings-nav-btn'),
+  settingsModal: document.getElementById('settings-modal'),
+  settingsModalCloseBtn: document.getElementById('settings-modal-close-btn'),
+  settingsSoundToggle: document.getElementById('settings-sound-toggle'),
+  settingsSoundStatus: document.getElementById('settings-sound-status'),
 
   // Auth Tabs & Forms
   tabBtnLogin: document.getElementById('tab-btn-login'),
@@ -273,19 +298,39 @@ function updateHUD(user) {
 }
 
 function switchView(view) {
-  if (view === 'game') {
-    DOM.authSection.classList.add('hidden');
-    DOM.gameSection.classList.remove('hidden');
-    DOM.logoutBtn.classList.remove('hidden');
+  state.currentView = view;
 
-    DOM.sessionBadge.className = 'player-chip active';
-    DOM.sessionStatusText.textContent = state.user.username;
-    if (DOM.userAvatarDisplay) DOM.userAvatarDisplay.textContent = state.user.avatar || '🍌';
-    if (DOM.sessionTitleText) DOM.sessionTitleText.textContent = state.user.title || 'Banana Rookie';
+  if (view === 'game') {
+    if (DOM.authSection) DOM.authSection.classList.add('hidden');
+    if (DOM.homeSection) DOM.homeSection.classList.add('hidden');
+    if (DOM.gameSection) DOM.gameSection.classList.remove('hidden');
+    if (DOM.logoutBtn) DOM.logoutBtn.classList.remove('hidden');
+
+    if (state.user) {
+      DOM.sessionBadge.className = 'player-chip active';
+      DOM.sessionStatusText.textContent = state.user.username;
+      if (DOM.userAvatarDisplay) DOM.userAvatarDisplay.textContent = state.user.avatar || '🍌';
+      if (DOM.sessionTitleText) DOM.sessionTitleText.textContent = state.user.title || 'Banana Rookie';
+    }
+  } else if (view === 'home') {
+    if (DOM.authSection) DOM.authSection.classList.add('hidden');
+    if (DOM.gameSection) DOM.gameSection.classList.add('hidden');
+    if (DOM.homeSection) DOM.homeSection.classList.remove('hidden');
+    if (DOM.logoutBtn) DOM.logoutBtn.classList.remove('hidden');
+
+    if (state.user) {
+      DOM.sessionBadge.className = 'player-chip active';
+      DOM.sessionStatusText.textContent = state.user.username;
+      if (DOM.userAvatarDisplay) DOM.userAvatarDisplay.textContent = state.user.avatar || '🍌';
+      if (DOM.sessionTitleText) DOM.sessionTitleText.textContent = state.user.title || 'Banana Rookie';
+    }
+    updateHomeScreen();
   } else {
-    DOM.gameSection.classList.add('hidden');
-    DOM.authSection.classList.remove('hidden');
-    DOM.logoutBtn.classList.add('hidden');
+    // Default to 'auth'
+    if (DOM.homeSection) DOM.homeSection.classList.add('hidden');
+    if (DOM.gameSection) DOM.gameSection.classList.add('hidden');
+    if (DOM.authSection) DOM.authSection.classList.remove('hidden');
+    if (DOM.logoutBtn) DOM.logoutBtn.classList.add('hidden');
 
     DOM.sessionBadge.className = 'player-chip guest';
     DOM.sessionStatusText.textContent = 'Not Logged In';
@@ -298,6 +343,35 @@ function switchView(view) {
       DOM.loginPassword.value = '';
     }
   }
+}
+
+function updateHomeScreen() {
+  if (!state.user) return;
+
+  if (DOM.homeWelcomeUser) {
+    DOM.homeWelcomeUser.textContent = `WELCOME, ${state.user.username.toUpperCase()}!`;
+  }
+  if (DOM.homeStatBest) {
+    DOM.homeStatBest.textContent = state.user.high_score || 0;
+  }
+  if (DOM.homeStatTitle) {
+    DOM.homeStatTitle.textContent = state.user.title || 'Banana Rookie';
+  }
+  if (DOM.homeStatAvatar) {
+    DOM.homeStatAvatar.textContent = state.user.avatar || '🍌';
+  }
+  if (DOM.homeStatRounds) {
+    DOM.homeStatRounds.textContent = state.user.rounds_played || 0;
+  }
+
+  // Sync mode buttons on home
+  if (DOM.homeModeBtns) {
+    DOM.homeModeBtns.forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.mode === state.currentMode);
+    });
+  }
+
+  loadAchievements();
 }
 
 function selectDigit(digit) {
@@ -330,7 +404,7 @@ function selectDigit(digit) {
 }
 
 function showResultBanner(isCorrect, message) {
-  DOM.feedbackBanner.className = `feedback-box ${isCorrect ? 'correct' : 'incorrect'}`;
+  DOM.feedbackBanner.className = `feedback-banner-box feedback-box ${isCorrect ? 'correct' : 'incorrect'}`;
   DOM.feedbackIcon.innerHTML = isCorrect 
     ? '<i class="fa-solid fa-circle-check"></i>' 
     : '<i class="fa-solid fa-circle-xmark"></i>';
@@ -574,6 +648,23 @@ async function loadAchievements() {
   if (DOM.modalPreviewTrophies) {
     DOM.modalPreviewTrophies.textContent = `${unlockedCount}/${totalCount}`;
   }
+  if (DOM.homeTrophyCounter) {
+    DOM.homeTrophyCounter.textContent = `${unlockedCount} / ${totalCount} Unlocked`;
+  }
+
+  // Populate preview on Game Home Screen
+  if (DOM.homeAchievementsPreview) {
+    const previewList = [...list].sort((a, b) => (b.unlocked ? 1 : 0) - (a.unlocked ? 1 : 0)).slice(0, 3);
+    DOM.homeAchievementsPreview.innerHTML = previewList.map(ach => `
+      <div class="home-ach-pill ${ach.unlocked ? 'unlocked' : 'locked'}">
+        <span class="home-ach-icon">${ach.icon}</span>
+        <div class="home-ach-meta">
+          <span class="home-ach-title">${escapeHtml(ach.name)}</span>
+          <span class="home-ach-badge">${ach.unlocked ? 'Unlocked' : 'In Progress'}</span>
+        </div>
+      </div>
+    `).join('');
+  }
 
   if (DOM.achievementsGrid) {
     DOM.achievementsGrid.innerHTML = list.map(ach => {
@@ -815,6 +906,13 @@ function setDifficultyMode(mode) {
     });
   }
 
+  // Update active styling on Game Home quick mode buttons
+  if (DOM.homeModeBtns) {
+    DOM.homeModeBtns.forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+  }
+
   // Persist mode choice to backend session
   api('/api/game/mode', {
     method: 'POST',
@@ -994,11 +1092,10 @@ function initEvents() {
     const res = await api('/api/auth/me');
     if (res.ok && res.data.authenticated) {
       state.user = res.data.user;
-      switchView('game');
+      switchView('home');
       updateHUD(state.user);
       loadUserHistory();
       showToast(`Welcome back, ${state.user.username}!`, 'info');
-      loadNewPuzzle();
     } else {
       switchView('auth');
     }
@@ -1138,12 +1235,11 @@ function initEvents() {
       }
 
       state.user = res.data.user;
-      switchView('game');
+      switchView('home');
       updateHUD(state.user);
       loadLeaderboard();
       loadUserHistory();
       showToast(`Welcome back, ${state.user.username}!`, 'success');
-      loadNewPuzzle();
     });
   }
 
@@ -1193,12 +1289,11 @@ function initEvents() {
       }
 
       state.user = res.data.user;
-      switchView('game');
+      switchView('home');
       updateHUD(state.user);
       loadLeaderboard();
       loadUserHistory();
       showToast(`Account created! Welcome, ${state.user.username}!`, 'success');
-      loadNewPuzzle();
     });
   }
 
@@ -1220,12 +1315,11 @@ function initEvents() {
       }
 
       state.user = res.data.user;
-      switchView('game');
+      switchView('home');
       updateHUD(state.user);
       loadLeaderboard();
       loadUserHistory();
       showToast(`Playing as ${state.user.username} (Guest)`, 'info');
-      loadNewPuzzle();
     });
   }
 
@@ -1415,6 +1509,7 @@ function initEvents() {
       SoundFX.isMuted = !SoundFX.isMuted;
       DOM.soundToggleBtn.classList.toggle('muted', SoundFX.isMuted);
       DOM.soundIcon.className = SoundFX.isMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+      if (DOM.settingsSoundStatus) DOM.settingsSoundStatus.textContent = SoundFX.isMuted ? 'Sound OFF' : 'Sound ON';
       showToast(SoundFX.isMuted ? 'Sound FX muted.' : 'Sound FX enabled!', 'info', 1500);
       if (!SoundFX.isMuted) SoundFX.click();
     });
@@ -1445,6 +1540,129 @@ function initEvents() {
         DOM.leaderboardModal.classList.add('hidden');
       }
     });
+  }
+
+  // 9. Game Home Screen Navigation & Interactions
+  if (DOM.homePlayBtn) {
+    DOM.homePlayBtn.addEventListener('click', () => {
+      SoundFX.click();
+      switchView('game');
+      loadNewPuzzle();
+    });
+  }
+
+  if (DOM.homeDailyBtn) {
+    DOM.homeDailyBtn.addEventListener('click', () => {
+      SoundFX.click();
+      setDifficultyMode('medium');
+      switchView('game');
+      loadNewPuzzle();
+      showToast('Daily Challenge started! 25s timer active.', 'info');
+    });
+  }
+
+  if (DOM.homeModeBtns && DOM.homeModeBtns.length > 0) {
+    DOM.homeModeBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        SoundFX.click();
+        const mode = btn.dataset.mode;
+        if (mode) setDifficultyMode(mode);
+      });
+    });
+  }
+
+  if (DOM.homeLevelCardTrigger) {
+    DOM.homeLevelCardTrigger.addEventListener('click', () => {
+      SoundFX.click();
+      openProfileModal();
+    });
+  }
+
+  if (DOM.homeViewAchievementsBtn) {
+    DOM.homeViewAchievementsBtn.addEventListener('click', () => {
+      SoundFX.click();
+      if (DOM.leaderboardModal) {
+        DOM.leaderboardModal.classList.remove('hidden');
+        if (DOM.tabBtnAchievements) {
+          DOM.tabBtnAchievements.click();
+        }
+      }
+    });
+  }
+
+  // 10. Gameplay Navigation: Back to Home from Arena
+  if (DOM.gameBackHomeBtn) {
+    DOM.gameBackHomeBtn.addEventListener('click', () => {
+      SoundFX.click();
+      stopTimer();
+      hideResultBanner();
+      switchView('home');
+    });
+  }
+
+  // 11. Results Banner Actions: Next Puzzle & Home
+  if (DOM.nextPuzzleBtn) {
+    DOM.nextPuzzleBtn.addEventListener('click', () => {
+      SoundFX.click();
+      hideResultBanner();
+      loadNewPuzzle();
+    });
+  }
+
+  if (DOM.resultHomeBtn) {
+    DOM.resultHomeBtn.addEventListener('click', () => {
+      SoundFX.click();
+      hideResultBanner();
+      stopTimer();
+      switchView('home');
+    });
+  }
+
+  // 12. Brand Logo Navigation: Return to Home if logged in
+  const navBrand = document.querySelector('.nav-brand');
+  if (navBrand) {
+    navBrand.style.cursor = 'pointer';
+    navBrand.addEventListener('click', (e) => {
+      if (state.user) {
+        e.preventDefault();
+        SoundFX.click();
+        stopTimer();
+        hideResultBanner();
+        switchView('home');
+      }
+    });
+  }
+
+  // 13. Settings Modal Handlers
+  if (DOM.settingsNavBtn && DOM.settingsModal) {
+    DOM.settingsNavBtn.addEventListener('click', () => {
+      SoundFX.click();
+      DOM.settingsModal.classList.remove('hidden');
+    });
+
+    if (DOM.settingsModalCloseBtn) {
+      DOM.settingsModalCloseBtn.addEventListener('click', () => {
+        SoundFX.click();
+        DOM.settingsModal.classList.add('hidden');
+      });
+    }
+
+    DOM.settingsModal.addEventListener('click', (e) => {
+      if (e.target === DOM.settingsModal) {
+        DOM.settingsModal.classList.add('hidden');
+      }
+    });
+
+    if (DOM.settingsSoundToggle) {
+      DOM.settingsSoundToggle.addEventListener('click', () => {
+        SoundFX.isMuted = !SoundFX.isMuted;
+        if (DOM.soundToggleBtn) DOM.soundToggleBtn.classList.toggle('muted', SoundFX.isMuted);
+        if (DOM.soundIcon) DOM.soundIcon.className = SoundFX.isMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+        if (DOM.settingsSoundStatus) DOM.settingsSoundStatus.textContent = SoundFX.isMuted ? 'Sound OFF' : 'Sound ON';
+        showToast(SoundFX.isMuted ? 'Sound FX muted.' : 'Sound FX enabled!', 'info', 1500);
+        if (!SoundFX.isMuted) SoundFX.click();
+      });
+    }
   }
 }
 

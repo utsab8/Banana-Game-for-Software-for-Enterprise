@@ -46,6 +46,11 @@
           <i class="fa-solid fa-volume-high" id="sound-icon"></i>
         </button>
 
+        <!-- Settings Modal Trigger -->
+        <button type="button" id="settings-nav-btn" class="nav-btn btn-sound" title="Game Settings" aria-label="Game Settings">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+
         <!-- Leaderboard Trigger -->
         <button type="button" id="leaderboard-nav-btn" class="nav-btn btn-leaderboard">
           <i class="fa-solid fa-trophy"></i>
@@ -243,7 +248,168 @@
     </section>
 
     <!-- ==================================================================== -->
-    <!-- 2. MAIN GAME ARENA & HUD VIEW                                        -->
+    <!-- 2. GAME HOME SCREEN (HUB / LOBBY)                                    -->
+    <!-- ==================================================================== -->
+    <section id="home-section" class="view-panel home-panel hidden">
+      
+      <!-- Main Welcome Hero Section -->
+      <div class="card home-hero-card">
+        <div class="home-hero-content">
+          
+          <!-- Friendly Banana Mascot Illustration -->
+          <div class="mascot-badge" aria-label="Banana Math Mascot">
+            <svg class="banana-mascot-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="60" cy="110" rx="36" ry="6" fill="#EBDDCB" />
+              <!-- Banana Body -->
+              <path d="M34 94C23 71 28 35 68 20C72 18 78 22 75 27C55 58 64 82 82 88C88 90 87 98 80 99C62 102 44 102 34 94Z" fill="#F9CA42" stroke="#DFA71E" stroke-width="3" stroke-linejoin="round"/>
+              <!-- Green Leaf Stem Cap -->
+              <path d="M68 20C69 13 75 11 77 10C80 9 82 13 80 16C77 20 73 21 68 20Z" fill="#6EAD79" stroke="#4F8659" stroke-width="2"/>
+              <!-- Friendly Eyes -->
+              <ellipse cx="50" cy="46" rx="4.5" ry="6" fill="#354B3C" />
+              <ellipse cx="64" cy="48" rx="4.5" ry="6" fill="#354B3C" />
+              <circle cx="51.5" cy="44" r="1.8" fill="#FFFFFF" />
+              <circle cx="65.5" cy="46" r="1.8" fill="#FFFFFF" />
+              <!-- Rosy Cheeks -->
+              <ellipse cx="43" cy="53" rx="4.5" ry="2.5" fill="#F28B43" opacity="0.6" />
+              <ellipse cx="71" cy="55" rx="4.5" ry="2.5" fill="#F28B43" opacity="0.6" />
+              <!-- Cheerful Smile -->
+              <path d="M52 54C54 59 60 60 63 56" stroke="#354B3C" stroke-width="2.5" stroke-linecap="round" />
+              <!-- Little Math Pencil in Hand -->
+              <rect x="23" y="44" width="6" height="18" rx="2" transform="rotate(-30 23 44)" fill="#F28B43" stroke="#CC6923" stroke-width="1.5"/>
+              <polygon points="21,57 24,63 28,60" fill="#F9CA42" stroke="#DFA71E" stroke-width="1"/>
+            </svg>
+          </div>
+
+          <div class="home-hero-text">
+            <div class="hero-tag-pill">
+              <span class="hero-tag-dot"></span>
+              <span id="home-welcome-user">WELCOME BACK!</span>
+            </div>
+            <h1 class="home-hero-title">Ready for a Brain Challenge?</h1>
+            <p class="home-hero-subtitle">Solve bite-sized algebraic banana puzzles, build your winning streak, and level up your math mastery!</p>
+            
+            <div class="home-hero-actions">
+              <button type="button" id="home-play-btn" class="btn btn-game-primary btn-play-hero btn-lg">
+                <i class="fa-solid fa-play"></i>
+                <span>Play Now</span>
+              </button>
+
+              <div class="home-mode-quick-select" role="radiogroup" aria-label="Game Mode Quick Select">
+                <button type="button" class="home-mode-btn" data-mode="easy" title="Casual untimed solving">
+                  <span class="mode-dot dot-easy"></span>
+                  <span>Easy</span>
+                </button>
+                <button type="button" class="home-mode-btn active" data-mode="medium" title="Standard challenge with 25s timer">
+                  <span class="mode-dot dot-medium"></span>
+                  <span>Medium (25s)</span>
+                </button>
+                <button type="button" class="home-mode-btn" data-mode="hard" title="High speed 12s challenge">
+                  <span class="mode-dot dot-hard"></span>
+                  <span>Hard (12s)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Player Statistics Overview Row (3 Cards) -->
+      <div class="home-stats-row">
+        <!-- Stat 1: Best Score -->
+        <div class="home-stat-card card-stat-score">
+          <div class="home-stat-icon-box icon-trophy">
+            <i class="fa-solid fa-crown"></i>
+          </div>
+          <div class="home-stat-meta">
+            <span class="home-stat-label">BEST SCORE</span>
+            <div class="home-stat-val-group">
+              <span id="home-stat-best" class="home-stat-val mono-val">0</span>
+              <span class="home-stat-unit">pts</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stat 2: Current Level & Equipped Title -->
+        <div class="home-stat-card card-stat-level" id="home-level-card-trigger" title="Click to view & customize title" style="cursor: pointer;">
+          <div class="home-stat-icon-box icon-avatar">
+            <span id="home-stat-avatar">🍌</span>
+          </div>
+          <div class="home-stat-meta">
+            <span class="home-stat-label">CURRENT RANK</span>
+            <span id="home-stat-title" class="home-stat-val home-title-val">Banana Rookie</span>
+            <span class="home-stat-sub">Tap to customize</span>
+          </div>
+        </div>
+
+        <!-- Stat 3: Total Games / Rounds Played -->
+        <div class="home-stat-card card-stat-rounds">
+          <div class="home-stat-icon-box icon-target">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
+          <div class="home-stat-meta">
+            <span class="home-stat-label">TOTAL GAMES</span>
+            <div class="home-stat-val-group">
+              <span id="home-stat-rounds" class="home-stat-val mono-val">0</span>
+              <span class="home-stat-unit">rounds</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Grid: Daily Challenge & Achievements Showcase -->
+      <div class="home-feature-grid">
+        
+        <!-- Daily Challenge Card -->
+        <div class="card home-feature-card home-daily-card">
+          <div class="feature-card-header">
+            <div class="feature-badge badge-daily">
+              <i class="fa-solid fa-bolt"></i>
+              <span>DAILY CHALLENGE</span>
+            </div>
+            <span class="feature-meta-pill">+50 Bonus Pts</span>
+          </div>
+          <h3 class="feature-card-title">Speed Equation Sprint</h3>
+          <p class="feature-card-desc">Solve today's math puzzle in under 20 seconds to maintain your daily streak bonus!</p>
+          <div class="feature-card-footer">
+            <div class="daily-perk-row">
+              <span class="daily-perk-dot"></span>
+              <span>1.5x Multiplier • Unlimited Retries</span>
+            </div>
+            <button type="button" id="home-daily-btn" class="btn btn-secondary-action">
+              <i class="fa-solid fa-fire"></i>
+              <span>Start Daily Challenge</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent Achievements Showcase Card -->
+        <div class="card home-feature-card home-achievements-card">
+          <div class="feature-card-header">
+            <div class="feature-badge badge-trophies">
+              <i class="fa-solid fa-medal"></i>
+              <span>ACHIEVEMENTS</span>
+            </div>
+            <span id="home-trophy-counter" class="feature-meta-pill">0 / 8 Unlocked</span>
+          </div>
+          <h3 class="feature-card-title">Trophies &amp; Milestones</h3>
+          <div id="home-achievements-preview" class="home-achievements-preview-list">
+            <!-- Dynamically populated 2-3 recent/in-progress trophies -->
+          </div>
+          <div class="feature-card-footer">
+            <button type="button" id="home-view-achievements-btn" class="btn btn-link-action">
+              <span>View All Trophies</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- 3. MAIN GAME ARENA & HUD VIEW                                        -->
     <!-- ==================================================================== -->
     <section id="game-section" class="view-panel hidden">
       
@@ -347,9 +513,15 @@
           
           <!-- Puzzle Card Top Bar -->
           <div class="puzzle-top-bar">
-            <div class="puzzle-tag">
-              <i class="fa-solid fa-puzzle-piece"></i>
-              <span id="puzzle-source-tag">Math Puzzle</span>
+            <div class="puzzle-top-left-group">
+              <button type="button" id="game-back-home-btn" class="btn btn-back-home" title="Return to Game Home">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Home</span>
+              </button>
+              <div class="puzzle-tag">
+                <i class="fa-solid fa-puzzle-piece"></i>
+                <span id="puzzle-source-tag">Math Puzzle</span>
+              </div>
             </div>
             <span id="fallback-indicator" class="fallback-pill hidden">
               <i class="fa-solid fa-wifi"></i> Offline Puzzle
@@ -393,8 +565,20 @@
 
           <!-- Dynamic Result Banner -->
           <div id="feedback-banner" class="feedback-banner-box hidden">
-            <span id="feedback-icon" class="feedback-icon"></span>
-            <span id="feedback-text" class="feedback-text"></span>
+            <div class="feedback-main-row">
+              <span id="feedback-icon" class="feedback-icon"></span>
+              <span id="feedback-text" class="feedback-text"></span>
+            </div>
+            <div class="feedback-action-row">
+              <button type="button" id="next-puzzle-btn" class="btn btn-next-puzzle">
+                <span>Next Puzzle</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+              <button type="button" id="result-home-btn" class="btn btn-home-result">
+                <i class="fa-solid fa-house"></i>
+                <span>Home</span>
+              </button>
+            </div>
           </div>
 
         </div>
@@ -623,6 +807,58 @@
           <i class="fa-solid fa-check"></i>
           <span>Save Profile Changes</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal Dialog -->
+  <div id="settings-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-trophy">⚙️</span>
+          <div>
+            <h3>Game Settings</h3>
+            <p>Customize audio &amp; gameplay preferences</p>
+          </div>
+        </div>
+        <button type="button" id="settings-modal-close-btn" class="btn-close" aria-label="Close settings">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="settings-list">
+          <div class="setting-item-row">
+            <div class="setting-info">
+              <span class="setting-title"><i class="fa-solid fa-volume-high"></i> Sound FX</span>
+              <span class="setting-desc">Play audio clicks, celebratory chimes, and timer warning ticks</span>
+            </div>
+            <button type="button" id="settings-sound-toggle" class="btn btn-setting-toggle" title="Toggle audio sound FX">
+              <span id="settings-sound-status">Sound ON</span>
+            </button>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-info">
+              <span class="setting-title"><i class="fa-regular fa-keyboard"></i> Keyboard Controls</span>
+              <span class="setting-desc">Press 0–9 on your physical keyboard to select; press Enter to submit answer</span>
+            </div>
+            <span class="badge-outcome-correct"><i class="fa-solid fa-check"></i> Active</span>
+          </div>
+
+          <div class="setting-item-row">
+            <div class="setting-info">
+              <span class="setting-title"><i class="fa-solid fa-cloud-arrow-down"></i> Banana API Service</span>
+              <span class="setting-desc">Real-time algebraic puzzle generator by Dr. Marc Conrad</span>
+            </div>
+            <span class="status-badge source-badge">Connected</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-close-modal" onclick="document.getElementById('settings-modal').classList.add('hidden')">Done</button>
       </div>
     </div>
   </div>
