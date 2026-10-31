@@ -8,10 +8,10 @@
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍌</text></svg>">
   
-  <!-- Premium Game Fonts: Outfit & Plus Jakarta Sans -->
+  <!-- Premium Game Fonts: Fredoka, Outfit & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
   
   <!-- Font Awesome Icons 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -20,9 +20,6 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="game-app">
-
-  <!-- Subtle Playful Background Pattern -->
-  <div class="game-bg-pattern" aria-hidden="true"></div>
 
   <!-- Top Game Navbar -->
   <header class="navbar">
@@ -36,7 +33,7 @@
         <div class="brand-text">
           <div class="brand-name-row">
             <span class="brand-title">Banana Math</span>
-            <span class="game-pill">CHALLENGE</span>
+            <span class="game-pill">STUDIO</span>
           </div>
           <span class="brand-tagline">Solve the puzzle &amp; beat your high score!</span>
         </div>
@@ -56,18 +53,12 @@
         </button>
 
         <!-- Current Player Identity Chip & Profile Trigger -->
-        <button type="button" id="session-badge" class="player-chip guest" title="Customize avatar & view achievements">
+        <button type="button" id="session-badge" class="player-chip guest" title="Customize avatar & view profile">
           <div class="player-avatar" id="user-avatar-display">🍌</div>
           <div class="player-chip-meta">
             <span id="session-status-text">Guest Player</span>
             <span id="session-title-text" class="player-title-pill">Banana Rookie</span>
           </div>
-        </button>
-
-        <!-- Logout Action -->
-        <button type="button" id="logout-btn" class="nav-btn btn-logout hidden" title="Sign out of game">
-          <i class="fa-solid fa-arrow-right-from-bracket"></i>
-          <span>Logout</span>
         </button>
       </div>
 
@@ -623,7 +614,11 @@
         </div>
       </div>
 
-      <div class="modal-footer">
+      <div class="modal-footer profile-modal-footer">
+        <button type="button" id="logout-btn" class="btn btn-logout hidden" title="Sign out of your account">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Log Out</span>
+        </button>
         <button type="button" id="save-profile-btn" class="btn btn-game-primary">
           <i class="fa-solid fa-check"></i>
           <span>Save Profile Changes</span>

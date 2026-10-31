@@ -336,6 +336,73 @@ function showResultBanner(isCorrect, message) {
     : '<i class="fa-solid fa-circle-xmark"></i>';
   DOM.feedbackText.textContent = message;
   DOM.feedbackBanner.classList.remove('hidden');
+
+  if (isCorrect) {
+    launchCelebrationConfetti();
+  }
+}
+
+function launchCelebrationConfetti() {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.style.position = 'fixed';
+    canvas.style.inset = '0';
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = '99999';
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ['#F9CA42', '#F28B43', '#6EAD79', '#354B3C', '#E29E25'];
+    const particles = Array.from({ length: 42 }, () => ({
+      x: canvas.width / 2 + (Math.random() - 0.5) * 160,
+      y: canvas.height * 0.45,
+      vx: (Math.random() - 0.5) * 11,
+      vy: -Math.random() * 11 - 4,
+      size: Math.random() * 8 + 5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * 360,
+      rotationSpeed: (Math.random() - 0.5) * 14,
+      alpha: 1
+    }));
+
+    let startTime = performance.now();
+    function animate(currentTime) {
+      const elapsed = currentTime - startTime;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.32; // gravity
+        p.rotation += p.rotationSpeed;
+        p.alpha = Math.max(0, 1 - elapsed / 1400);
+
+        if (p.alpha > 0) {
+          alive = true;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          ctx.restore();
+        }
+      }
+
+      if (alive && elapsed < 1500) {
+        requestAnimationFrame(animate);
+      } else {
+        canvas.remove();
+      }
+    }
+    requestAnimationFrame(animate);
+  } catch (err) {
+    // Graceful fallback
+  }
 }
 
 function hideResultBanner() {
@@ -380,11 +447,11 @@ async function loadLeaderboard(retryCount = 0) {
     const rank = idx + 1;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
     const isCurrent = Boolean(state.user && state.user.username && player && player.username && state.user.username.toLowerCase() === player.username.toLowerCase());
-    const highlightStyle = isCurrent ? 'font-weight: 700; background-color: #f0fdf4;' : '';
+    const rowClass = isCurrent ? 'current-player-row' : '';
     const dateFormatted = player.last_active_at ? new Date(player.last_active_at).toLocaleDateString() : '-';
 
     return `
-      <tr style="${highlightStyle}">
+      <tr class="${rowClass}">
         <td><span class="rank-badge ${rankClass}">${rank}</span></td>
         <td><span class="player-avatar-mini">${player.avatar || '🍌'}</span><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge-db-small">You</span>' : ''} <span class="player-title-mini">${escapeHtml(player.title || 'Banana Rookie')}</span></td>
         <td class="text-right"><strong class="mono-val">${player.high_score}</strong> <span class="text-muted" style="font-size: 0.75rem;">pts</span></td>
@@ -399,10 +466,10 @@ async function loadLeaderboard(retryCount = 0) {
     const rank = idx + 1;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
     const isCurrent = Boolean(state.user && state.user.username && player && player.username && state.user.username.toLowerCase() === player.username.toLowerCase());
-    const highlightStyle = isCurrent ? 'font-weight: 700; background-color: #f0fdf4;' : '';
+    const rowClass = isCurrent ? 'current-player-row' : '';
 
     return `
-      <tr style="${highlightStyle}">
+      <tr class="${rowClass}">
         <td><span class="rank-badge ${rankClass}">${rank}</span></td>
         <td><span class="player-avatar-mini">${player.avatar || '🍌'}</span><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge-db-small">You</span>' : ''} <span class="player-title-mini">${escapeHtml(player.title || 'Banana Rookie')}</span></td>
         <td class="text-right"><strong class="mono-val">${player.high_score}</strong> pts</td>
@@ -1237,6 +1304,7 @@ function initEvents() {
       state.user = null;
       state.selectedAnswer = null;
       state.currentMode = 'medium';
+      if (DOM.profileModal) DOM.profileModal.classList.add('hidden');
       switchView('auth');
       loadLeaderboard();
       showToast('You have been logged out.', 'info');
@@ -1351,6 +1419,13 @@ function initEvents() {
       if (!SoundFX.isMuted) SoundFX.click();
     });
   }
+
+  // Ensure pure Arcade Game Theme is active
+  try {
+    localStorage.removeItem('banana_game_theme');
+  } catch (e) {}
+  document.body.classList.remove('theme-light');
+  document.body.classList.add('theme-arcade');
 
   // 8. Leaderboard Modal Handlers
   if (DOM.leaderboardNavBtn && DOM.leaderboardModal) {
