@@ -1448,6 +1448,602 @@ body.game-app {
   margin-left: 0.4rem;
 }
 
+/* ========================================================================== */
+/* Olympic / Arcade Leaderboard: Top 3 Podium & Ranks 4-10 Column Cards       */
+/* ========================================================================== */
+#leaderboard-modal .modal-card {
+  max-width: 680px;
+  width: 95%;
+}
+
+.leaderboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  width: 100%;
+  padding: 0.5rem 0;
+}
+
+/* 1. The Podium Wrapper */
+.podium-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 1.5rem 1rem 0;
+  background: radial-gradient(circle at 50% 25%, rgba(249, 202, 66, 0.15) 0%, rgba(255, 249, 237, 0) 70%);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.podium-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: flex-end;
+  gap: 1rem;
+  width: 100%;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+/* Individual Podium Slot */
+.podium-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.podium-slot:hover {
+  transform: translateY(-4px);
+}
+
+/* Crown for 1st Place (Middle) */
+.podium-crown {
+  font-size: 1.85rem;
+  color: #F59E0B;
+  filter: drop-shadow(0 3px 6px rgba(245, 158, 11, 0.45));
+  animation: crownBounce 2.4s ease-in-out infinite;
+  margin-bottom: 0.25rem;
+}
+
+@keyframes crownBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Avatar Wrappers & Rings */
+.podium-avatar-wrapper {
+  position: relative;
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.55rem;
+  transition: all 0.2s ease;
+}
+
+.podium-avatar {
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  user-select: none;
+}
+
+/* 1st Place Avatar (Middle) */
+.podium-first .podium-avatar-wrapper {
+  width: 76px;
+  height: 76px;
+  background: linear-gradient(135deg, #FFF6D6, #FFE28A);
+  border: 4px solid #F9CA42;
+  box-shadow: 0 0 22px rgba(249, 202, 66, 0.55), 0 6px 14px rgba(68, 59, 50, 0.12);
+}
+.podium-first .podium-avatar {
+  font-size: 2.5rem;
+}
+
+/* 2nd Place Avatar (Left) */
+.podium-second .podium-avatar-wrapper {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #F1F5F9, #E2E8F0);
+  border: 3.5px solid #94A3B8;
+  box-shadow: 0 0 14px rgba(148, 163, 184, 0.35), 0 4px 10px rgba(68, 59, 50, 0.08);
+}
+.podium-second .podium-avatar {
+  font-size: 2rem;
+}
+
+/* 3rd Place Avatar (Right) */
+.podium-third .podium-avatar-wrapper {
+  width: 58px;
+  height: 58px;
+  background: linear-gradient(135deg, #FFF1E6, #FED7AA);
+  border: 3.5px solid #EA580C;
+  box-shadow: 0 0 14px rgba(234, 88, 12, 0.35), 0 4px 10px rgba(68, 59, 50, 0.08);
+}
+.podium-third .podium-avatar {
+  font-size: 1.8rem;
+}
+
+/* Empty Placeholder Avatar */
+.podium-empty .podium-avatar-wrapper {
+  background: #F4EFE6 !important;
+  border: 2px dashed #D6C8B8 !important;
+  box-shadow: none !important;
+}
+
+/* Rank number badge attached to avatar */
+.podium-rank-tag {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-game);
+  font-weight: 800;
+  font-size: 0.78rem;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+}
+.gold-tag { background: linear-gradient(135deg, #F59E0B, #D97706); }
+.silver-tag { background: linear-gradient(135deg, #94A3B8, #64748B); }
+.bronze-tag { background: linear-gradient(135deg, #EA580C, #C2410C); }
+
+/* Player Meta Text */
+.podium-player-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  margin-bottom: 0.75rem;
+  width: 100%;
+  padding: 0 0.25rem;
+}
+
+.podium-player-name {
+  font-family: var(--font-game);
+  font-weight: 700;
+  color: var(--dark-green);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.podium-first .podium-player-name {
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+.podium-player-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-cream);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Score Pills */
+.podium-score-pill {
+  font-family: var(--font-game);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.22rem 0.7rem;
+  border-radius: var(--radius-full);
+  margin-top: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+.gold-score {
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1.5px solid #FCD34D;
+}
+.silver-score {
+  background: #F1F5F9;
+  color: #475569;
+  border: 1.5px solid #CBD5E1;
+}
+.bronze-score {
+  background: #FFEDD5;
+  color: #C2410C;
+  border: 1.5px solid #FDBA74;
+}
+.empty-score {
+  background: #F5EFEB;
+  color: #A8A29E;
+  border: 1px dashed #D6C8B8;
+}
+
+.podium-substats {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-top: 0.15rem;
+}
+
+/* 2. The Pedestal Blocks (Stands) */
+.podium-pedestal {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 0.85rem;
+  position: relative;
+  box-shadow: 0 6px 16px rgba(68, 59, 50, 0.08);
+}
+
+/* Pedestal Heights: 1st tallest, 2nd mid, 3rd lowest */
+.pedestal-first {
+  height: 145px;
+  background: linear-gradient(180deg, #F9CA42 0%, #E89E20 100%);
+  border-radius: 16px 16px 0 0;
+  border-top: 4px solid #FFE58F;
+  border-left: 2px solid #FFE58F;
+  border-right: 2px solid #D48806;
+  z-index: 2;
+}
+
+.pedestal-second {
+  height: 105px;
+  background: linear-gradient(180deg, #CBD5E1 0%, #94A3B8 100%);
+  border-radius: 14px 14px 0 0;
+  border-top: 4px solid #F1F5F9;
+  border-left: 2px solid #F1F5F9;
+  border-right: 2px solid #64748B;
+  z-index: 1;
+}
+
+.pedestal-third {
+  height: 80px;
+  background: linear-gradient(180deg, #FDBA74 0%, #C2410C 100%);
+  border-radius: 14px 14px 0 0;
+  border-top: 4px solid #FFEDD5;
+  border-left: 2px solid #FFEDD5;
+  border-right: 2px solid #9A3412;
+  z-index: 1;
+}
+
+.pedestal-num-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pedestal-num {
+  font-family: var(--font-game);
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.pedestal-text {
+  font-family: var(--font-game);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 0.2rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.podium-base-platform {
+  width: 100%;
+  max-width: 600px;
+  height: 12px;
+  background: linear-gradient(180deg, #354B3C 0%, #25362B 100%);
+  border-radius: var(--radius-full);
+  margin-top: -2px;
+  box-shadow: 0 4px 12px rgba(53, 75, 60, 0.35);
+}
+
+/* 3. Ranks 4-10 Vertical Column Cards */
+.ranks-column-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.ranks-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.25rem;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 0.35rem;
+}
+
+.ranks-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-game);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--dark-green);
+}
+
+.ranks-header-title i {
+  color: var(--primary);
+}
+
+.ranks-header-subtitle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ranks-column-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+/* Individual Rank Card Row (4-10) */
+.rank-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.15rem;
+  box-shadow: 0 2px 6px rgba(68, 59, 50, 0.04);
+  transition: all 0.2s ease;
+}
+
+.rank-card-row:hover {
+  transform: translateX(3px);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(68, 59, 50, 0.08);
+  background: #FFFDF9;
+}
+
+/* Highlight row if it is the current user */
+.rank-card-row.current-player-row {
+  background: #FFF8E6;
+  border-left: 5px solid var(--primary);
+  border-color: #FBD38D;
+  box-shadow: 0 3px 10px rgba(249, 202, 66, 0.25);
+}
+
+.rank-card-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.rank-number-pill {
+  font-family: var(--font-game);
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  background: var(--bg-cream);
+  border: 1px solid var(--border-subtle);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.rank-card-row.current-player-row .rank-number-pill {
+  color: var(--dark-green);
+  border-color: var(--primary);
+  background: #FFF0BD;
+}
+
+.rank-avatar-circle {
+  font-size: 1.6rem;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--bg-cream);
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.rank-player-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.rank-player-username {
+  font-family: var(--font-game);
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rank-player-title {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rank-card-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.rank-stat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.rank-stat-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.rank-stat-val {
+  font-size: 0.9rem;
+  color: var(--text-main);
+}
+
+.rank-score-chip .rank-stat-val strong {
+  font-size: 1.05rem;
+  color: var(--dark-green);
+}
+
+/* Empty State & Loading State */
+.ranks-empty-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--bg-cream);
+  border: 1.5px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+
+.ranks-empty-icon {
+  font-size: 1.75rem;
+  color: var(--primary);
+}
+
+.ranks-empty-text strong {
+  display: block;
+  color: var(--dark-green);
+  font-family: var(--font-game);
+  margin-bottom: 0.2rem;
+}
+
+.ranks-empty-text p {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.leaderboard-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 3rem 1rem;
+  font-family: var(--font-game);
+  color: var(--text-muted);
+  font-size: 1.05rem;
+}
+
+.leaderboard-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+}
+
+/* Responsive tweaks for mobile */
+@media (max-width: 640px) {
+  .podium-grid {
+    gap: 0.4rem;
+  }
+  .podium-first .podium-avatar-wrapper {
+    width: 64px;
+    height: 64px;
+  }
+  .podium-first .podium-avatar {
+    font-size: 2rem;
+  }
+  .podium-second .podium-avatar-wrapper {
+    width: 54px;
+    height: 54px;
+  }
+  .podium-second .podium-avatar {
+    font-size: 1.7rem;
+  }
+  .podium-third .podium-avatar-wrapper {
+    width: 50px;
+    height: 50px;
+  }
+  .podium-third .podium-avatar {
+    font-size: 1.5rem;
+  }
+  .pedestal-first {
+    height: 120px;
+  }
+  .pedestal-second {
+    height: 90px;
+  }
+  .pedestal-third {
+    height: 70px;
+  }
+  .pedestal-num {
+    font-size: 1.8rem;
+  }
+  .pedestal-text {
+    font-size: 0.65rem;
+  }
+  .podium-player-name {
+    font-size: 0.82rem;
+    max-width: 95px;
+  }
+  .podium-score-pill {
+    font-size: 0.74rem;
+    padding: 0.2rem 0.5rem;
+  }
+  .podium-substats {
+    flex-direction: column;
+    gap: 0.1rem;
+    font-size: 0.68rem;
+  }
+  .rank-card-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+  .rank-card-right {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border-subtle);
+  }
+}
+
 /* Outcome Badges */
 .badge-outcome-correct {
   display: inline-flex;

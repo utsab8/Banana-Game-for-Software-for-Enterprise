@@ -136,13 +136,15 @@ const DOM = {
   leaderboardNavBtn: document.getElementById('leaderboard-nav-btn'),
   leaderboardModal: document.getElementById('leaderboard-modal'),
   modalCloseBtn: document.getElementById('modal-close-btn'),
-  modalLeaderboardTbody: document.getElementById('modal-leaderboard-tbody'),
+  leaderboardPodium: document.getElementById('leaderboard-podium'),
+  leaderboardRanksList: document.getElementById('leaderboard-ranks-list'),
+  modalLeaderboardPodium: document.getElementById('modal-leaderboard-podium'),
+  modalLeaderboardRanksList: document.getElementById('modal-leaderboard-ranks-list'),
   tabBtnLeaderboard: document.getElementById('tab-btn-leaderboard'),
   tabBtnHistory: document.getElementById('tab-btn-history'),
   tabContentLeaderboard: document.getElementById('tab-content-leaderboard'),
   tabContentHistory: document.getElementById('tab-content-history'),
   refreshDataBtn: document.getElementById('refresh-data-btn'),
-  leaderboardTbody: document.getElementById('leaderboard-tbody'),
   historyTbody: document.getElementById('history-tbody'),
 
   // Difficulty Mode & Countdown Timer
@@ -544,6 +546,162 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function renderPodiumSlot(player, rank) {
+  const isRank1 = rank === 1;
+  const isRank2 = rank === 2;
+  const isRank3 = rank === 3;
+
+  const tierClass = isRank1 ? 'podium-first' : isRank2 ? 'podium-second' : 'podium-third';
+  const pedestalClass = isRank1 ? 'pedestal-first' : isRank2 ? 'pedestal-second' : 'pedestal-third';
+  const ringClass = isRank1 ? 'gold-ring' : isRank2 ? 'silver-ring' : 'bronze-ring';
+  const tagClass = isRank1 ? 'gold-tag' : isRank2 ? 'silver-tag' : 'bronze-tag';
+  const scoreClass = isRank1 ? 'gold-score' : isRank2 ? 'silver-score' : 'bronze-score';
+  const medalText = isRank1 ? '1st Place' : isRank2 ? '2nd Place' : '3rd Place';
+
+  if (!player) {
+    return `
+      <div class="podium-slot ${tierClass} podium-empty">
+        <div class="podium-avatar-wrapper empty-ring">
+          <span class="podium-avatar">❓</span>
+          <span class="podium-rank-tag ${tagClass}">${rank}</span>
+        </div>
+        <div class="podium-player-meta">
+          <div class="podium-player-name text-muted">Open Spot</div>
+          <div class="podium-player-title text-muted">Awaiting Player</div>
+          <div class="podium-score-pill empty-score">
+            <span class="mono-val">—</span> <small>pts</small>
+          </div>
+          <div class="podium-substats text-muted">
+            <span>Play to rank #${rank}!</span>
+          </div>
+        </div>
+        <div class="podium-pedestal ${pedestalClass}">
+          <div class="pedestal-num-wrap">
+            <span class="pedestal-num">${rank}</span>
+            <span class="pedestal-text">${medalText}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const isCurrent = Boolean(
+    state.user &&
+    state.user.username &&
+    player.username &&
+    state.user.username.toLowerCase() === player.username.toLowerCase()
+  );
+
+  return `
+    <div class="podium-slot ${tierClass} ${isCurrent ? 'current-player' : ''}">
+      ${isRank1 ? '<div class="podium-crown" title="Leaderboard Champion"><i class="fa-solid fa-crown"></i></div>' : ''}
+      <div class="podium-avatar-wrapper ${ringClass}">
+        <span class="podium-avatar">${player.avatar || '🍌'}</span>
+        <span class="podium-rank-tag ${tagClass}">${rank}</span>
+      </div>
+      <div class="podium-player-meta">
+        <div class="podium-player-name" title="${escapeHtml(player.username)}">
+          <strong>${escapeHtml(player.username)}</strong>
+          ${isCurrent ? '<span class="badge-db-small">You</span>' : ''}
+        </div>
+        <div class="podium-player-title">${escapeHtml(player.title || 'Banana Rookie')}</div>
+        <div class="podium-score-pill ${scoreClass}">
+          <i class="fa-solid fa-star"></i>
+          <strong class="mono-val">${Number(player.high_score || 0).toLocaleString()}</strong> <small>pts</small>
+        </div>
+        <div class="podium-substats">
+          <span><i class="fa-solid fa-fire text-warning"></i> ${player.streak || 0}x</span>
+          <span><i class="fa-solid fa-gamepad text-muted"></i> ${player.rounds_played || 0} rds</span>
+        </div>
+      </div>
+      <div class="podium-pedestal ${pedestalClass}">
+        <div class="pedestal-num-wrap">
+          <span class="pedestal-num">${rank}</span>
+          <span class="pedestal-text">${medalText}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPodium(top3) {
+  // Olympic Podium Layout: Rank 2 on Left, Rank 1 in Middle (Elevated), Rank 3 on Right
+  const p1 = top3[0] || null;
+  const p2 = top3[1] || null;
+  const p3 = top3[2] || null;
+
+  return `
+    <div class="podium-grid">
+      ${renderPodiumSlot(p2, 2)}
+      ${renderPodiumSlot(p1, 1)}
+      ${renderPodiumSlot(p3, 3)}
+    </div>
+    <div class="podium-base-platform"></div>
+  `;
+}
+
+function renderRanksList(rest, isModal = false) {
+  if (!rest || rest.length === 0) {
+    return `
+      <div class="ranks-empty-card">
+        <div class="ranks-empty-icon"><i class="fa-solid fa-award"></i></div>
+        <div class="ranks-empty-text">
+          <strong>Ranks #4 through #10 are wide open!</strong>
+          <p>Solve puzzles and build streaks to claim your spot on the global standings!</p>
+        </div>
+      </div>
+    `;
+  }
+
+  return rest.map((player, idx) => {
+    const rank = idx + 4;
+    const isCurrent = Boolean(
+      state.user &&
+      state.user.username &&
+      player.username &&
+      state.user.username.toLowerCase() === player.username.toLowerCase()
+    );
+    const dateFormatted = (!isModal && player.last_active_at)
+      ? new Date(player.last_active_at).toLocaleDateString()
+      : null;
+
+    return `
+      <div class="rank-card-row ${isCurrent ? 'current-player-row' : ''}">
+        <div class="rank-card-left">
+          <span class="rank-number-pill">#${rank}</span>
+          <div class="rank-avatar-circle">${player.avatar || '🍌'}</div>
+          <div class="rank-player-details">
+            <div class="rank-player-username">
+              <strong>${escapeHtml(player.username)}</strong>
+              ${isCurrent ? '<span class="badge-db-small">You</span>' : ''}
+            </div>
+            <span class="rank-player-title">${escapeHtml(player.title || 'Banana Rookie')}</span>
+          </div>
+        </div>
+        <div class="rank-card-right">
+          <div class="rank-stat-chip rank-score-chip" title="High Score">
+            <span class="rank-stat-label">Score</span>
+            <span class="rank-stat-val"><strong class="mono-val">${Number(player.high_score || 0).toLocaleString()}</strong> <small>pts</small></span>
+          </div>
+          <div class="rank-stat-chip rank-streak-chip" title="Best Streak">
+            <span class="rank-stat-label">Streak</span>
+            <span class="rank-stat-val"><i class="fa-solid fa-fire text-warning"></i> ${player.streak || 0}x</span>
+          </div>
+          <div class="rank-stat-chip rank-rounds-chip" title="Rounds Played">
+            <span class="rank-stat-label">Rounds</span>
+            <span class="rank-stat-val"><i class="fa-solid fa-gamepad text-muted"></i> ${player.rounds_played || 0}</span>
+          </div>
+          ${dateFormatted ? `
+          <div class="rank-stat-chip rank-date-chip" title="Last Active">
+            <span class="rank-stat-label">Active</span>
+            <span class="rank-stat-val text-muted">${dateFormatted}</span>
+          </div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 async function loadLeaderboard(retryCount = 0) {
   const res = await api('/api/game/leaderboard');
   if (!res.ok || !res.data || !res.data.leaderboard) {
@@ -551,58 +709,32 @@ async function loadLeaderboard(retryCount = 0) {
       setTimeout(() => loadLeaderboard(retryCount + 1), 1200);
       return;
     }
-    const errHtml = `<tr><td colspan="6" class="text-center py-4 text-muted">Leaderboard sync in progress... <button type="button" class="btn-link-highlight" onclick="loadLeaderboard()" style="margin-left: 6px; text-decoration: underline; cursor: pointer;">Retry</button></td></tr>`;
-    if (DOM.leaderboardTbody) DOM.leaderboardTbody.innerHTML = errHtml;
-    if (DOM.modalLeaderboardTbody) DOM.modalLeaderboardTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Leaderboard sync in progress... <button type="button" class="btn-link-highlight" onclick="loadLeaderboard()" style="margin-left: 6px; text-decoration: underline; cursor: pointer;">Retry</button></td></tr>`;
+    const errHtml = `
+      <div class="leaderboard-empty-state">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Leaderboard sync in progress...</span>
+        <button type="button" class="btn-link-highlight" onclick="loadLeaderboard()" style="margin-left: 6px; text-decoration: underline; cursor: pointer;">Retry</button>
+      </div>`;
+    if (DOM.leaderboardPodium) DOM.leaderboardPodium.innerHTML = errHtml;
+    if (DOM.leaderboardRanksList) DOM.leaderboardRanksList.innerHTML = '';
+    if (DOM.modalLeaderboardPodium) DOM.modalLeaderboardPodium.innerHTML = errHtml;
+    if (DOM.modalLeaderboardRanksList) DOM.modalLeaderboardRanksList.innerHTML = '';
     return;
   }
 
   const list = res.data.leaderboard;
-  if (list.length === 0) {
-    const emptyHtml = `<tr><td colspan="6" class="text-center py-4 text-muted">No players recorded in SQLite yet. Play a round to rank #1!</td></tr>`;
-    if (DOM.leaderboardTbody) DOM.leaderboardTbody.innerHTML = emptyHtml;
-    if (DOM.modalLeaderboardTbody) DOM.modalLeaderboardTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No records yet.</td></tr>`;
-    return;
-  }
+  const top3 = list.slice(0, 3);
+  const rest = list.slice(3, 10);
 
-  const rowsHtml = list.map((player, idx) => {
-    const rank = idx + 1;
-    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
-    const isCurrent = Boolean(state.user && state.user.username && player && player.username && state.user.username.toLowerCase() === player.username.toLowerCase());
-    const rowClass = isCurrent ? 'current-player-row' : '';
-    const dateFormatted = player.last_active_at ? new Date(player.last_active_at).toLocaleDateString() : '-';
+  const podiumHtml = renderPodium(top3);
+  const ranksListHtml = renderRanksList(rest, false);
+  const modalRanksListHtml = renderRanksList(rest, true);
 
-    return `
-      <tr class="${rowClass}">
-        <td><span class="rank-badge ${rankClass}">${rank}</span></td>
-        <td><span class="player-avatar-mini">${player.avatar || '🍌'}</span><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge-db-small">You</span>' : ''} <span class="player-title-mini">${escapeHtml(player.title || 'Banana Rookie')}</span></td>
-        <td class="text-right"><strong class="mono-val">${player.high_score}</strong> <span class="text-muted" style="font-size: 0.75rem;">pts</span></td>
-        <td class="text-center"><span class="mono-val">${player.streak}x</span></td>
-        <td class="text-center"><span class="mono-val">${player.rounds_played}</span></td>
-        <td><span class="text-muted" style="font-size: 0.78rem;">${dateFormatted}</span></td>
-      </tr>
-    `;
-  }).join('');
+  if (DOM.leaderboardPodium) DOM.leaderboardPodium.innerHTML = podiumHtml;
+  if (DOM.leaderboardRanksList) DOM.leaderboardRanksList.innerHTML = ranksListHtml;
 
-  const modalRowsHtml = list.map((player, idx) => {
-    const rank = idx + 1;
-    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
-    const isCurrent = Boolean(state.user && state.user.username && player && player.username && state.user.username.toLowerCase() === player.username.toLowerCase());
-    const rowClass = isCurrent ? 'current-player-row' : '';
-
-    return `
-      <tr class="${rowClass}">
-        <td><span class="rank-badge ${rankClass}">${rank}</span></td>
-        <td><span class="player-avatar-mini">${player.avatar || '🍌'}</span><strong>${escapeHtml(player.username)}</strong>${isCurrent ? ' <span class="badge-db-small">You</span>' : ''} <span class="player-title-mini">${escapeHtml(player.title || 'Banana Rookie')}</span></td>
-        <td class="text-right"><strong class="mono-val">${player.high_score}</strong> pts</td>
-        <td class="text-center"><span class="mono-val">${player.streak}x</span></td>
-        <td class="text-center"><span class="mono-val">${player.rounds_played}</span></td>
-      </tr>
-    `;
-  }).join('');
-
-  if (DOM.leaderboardTbody) DOM.leaderboardTbody.innerHTML = rowsHtml;
-  if (DOM.modalLeaderboardTbody) DOM.modalLeaderboardTbody.innerHTML = modalRowsHtml;
+  if (DOM.modalLeaderboardPodium) DOM.modalLeaderboardPodium.innerHTML = podiumHtml;
+  if (DOM.modalLeaderboardRanksList) DOM.modalLeaderboardRanksList.innerHTML = modalRanksListHtml;
 }
 
 async function loadUserHistory() {

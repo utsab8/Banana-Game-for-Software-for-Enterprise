@@ -820,27 +820,27 @@
           </button>
         </div>
 
-        <!-- Tab 1: Leaderboard Table -->
-        <div id="tab-content-leaderboard" class="table-responsive">
-          <table class="game-table">
-            <thead>
-              <tr>
-                <th style="width: 80px;">Rank</th>
-                <th>Player</th>
-                <th class="text-right">High Score</th>
-                <th class="text-center">Best Streak</th>
-                <th class="text-center">Rounds</th>
-                <th>Last Active</th>
-              </tr>
-            </thead>
-            <tbody id="leaderboard-tbody">
-              <tr>
-                <td colspan="6" class="text-center py-4 text-muted">
-                  <i class="fa-solid fa-spinner fa-spin"></i> Loading leaderboard...
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Tab 1: Leaderboard Olympic Podium & Ranks 4-10 List -->
+        <div id="tab-content-leaderboard" class="leaderboard-container">
+          <div id="leaderboard-podium" class="podium-wrapper">
+            <div class="leaderboard-loading">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              <span>Loading Champions Podium...</span>
+            </div>
+          </div>
+
+          <div class="ranks-column-wrapper">
+            <div class="ranks-column-header">
+              <div class="ranks-header-title">
+                <i class="fa-solid fa-ranking-star"></i>
+                <span>Challengers (Ranks 4 – 10)</span>
+              </div>
+              <span class="ranks-header-subtitle">Top Global Contenders</span>
+            </div>
+            <div id="leaderboard-ranks-list" class="ranks-column-list">
+              <!-- Dynamically populated by app.js -->
+            </div>
+          </div>
         </div>
 
         <!-- Tab 2: Player History Table -->
@@ -1176,23 +1176,25 @@
       </div>
 
       <div class="modal-body">
-        <div class="table-responsive">
-          <table class="game-table">
-            <thead>
-              <tr>
-                <th style="width: 80px;">Rank</th>
-                <th>Player</th>
-                <th class="text-right">High Score</th>
-                <th class="text-center">Streak</th>
-                <th class="text-center">Rounds</th>
-              </tr>
-            </thead>
-            <tbody id="modal-leaderboard-tbody">
-              <tr>
-                <td colspan="5" class="text-center py-4 text-muted">Loading rankings...</td>
-              </tr>
-            </tbody>
-          </table>
+        <div id="modal-leaderboard-container" class="leaderboard-container modal-leaderboard-view">
+          <div id="modal-leaderboard-podium" class="podium-wrapper">
+            <div class="leaderboard-loading">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              <span>Loading Champions Podium...</span>
+            </div>
+          </div>
+
+          <div class="ranks-column-wrapper">
+            <div class="ranks-column-header">
+              <div class="ranks-header-title">
+                <i class="fa-solid fa-ranking-star"></i>
+                <span>Challengers (Ranks 4 – 10)</span>
+              </div>
+            </div>
+            <div id="modal-leaderboard-ranks-list" class="ranks-column-list">
+              <!-- Dynamically populated by app.js -->
+            </div>
+          </div>
         </div>
       </div>
 
