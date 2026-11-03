@@ -285,10 +285,10 @@ function showToast(message, type = 'info', duration = 3000) {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
 
-  const iconTag = type === 'success' 
-    ? '<i class="fa-solid fa-circle-check"></i>' 
-    : type === 'error' 
-      ? '<i class="fa-solid fa-circle-exclamation"></i>' 
+  const iconTag = type === 'success'
+    ? '<i class="fa-solid fa-circle-check"></i>'
+    : type === 'error'
+      ? '<i class="fa-solid fa-circle-exclamation"></i>'
       : '<i class="fa-solid fa-circle-info"></i>';
 
   toast.innerHTML = `${iconTag} <span>${message}</span>`;
@@ -371,8 +371,8 @@ function switchView(view) {
 async function updateHomeScreen() {
   if (!state.user) return;
 
-  const bestScore = (state.user.highScore !== undefined) 
-    ? state.user.highScore 
+  const bestScore = (state.user.highScore !== undefined)
+    ? state.user.highScore
     : (state.user.high_score !== undefined ? state.user.high_score : 0);
 
   const totalRounds = (state.user.roundsPlayed !== undefined)
@@ -453,8 +453,8 @@ function selectDigit(digit) {
 
 function showResultBanner(isCorrect, message) {
   DOM.feedbackBanner.className = `feedback-banner-box feedback-box ${isCorrect ? 'correct' : 'incorrect'}`;
-  DOM.feedbackIcon.innerHTML = isCorrect 
-    ? '<i class="fa-solid fa-circle-check"></i>' 
+  DOM.feedbackIcon.innerHTML = isCorrect
+    ? '<i class="fa-solid fa-circle-check"></i>'
     : '<i class="fa-solid fa-circle-xmark"></i>';
   DOM.feedbackText.textContent = message;
   DOM.feedbackBanner.classList.remove('hidden');
@@ -620,13 +620,13 @@ async function loadUserHistory() {
 
   if (DOM.historyTbody) {
     DOM.historyTbody.innerHTML = history.map((round, idx) => {
-      const resultBadge = round.is_correct 
+      const resultBadge = round.is_correct
         ? '<span class="badge-outcome-correct"><i class="fa-solid fa-check"></i> Validated</span>'
         : '<span class="badge-outcome-wrong"><i class="fa-solid fa-xmark"></i> Rejected</span>';
       const sourceBadge = round.is_fallback
         ? '<span class="status-badge fallback-badge" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">Offline SVG</span>'
         : '<span class="status-badge source-badge" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">Banana API</span>';
-      
+
       const roundMode = round.mode || 'medium';
       const modeBadge = roundMode === 'easy'
         ? '<span class="badge-mode-easy">Easy</span>'
@@ -734,8 +734,8 @@ async function loadAchievements() {
               ${statusTag}
             </div>
             <p class="achievement-desc">${escapeHtml(ach.description)}</p>` +
-            dateText +
-          `</div>
+        dateText +
+        `</div>
         </div>
       `;
     }).join('');
@@ -1495,8 +1495,8 @@ function initEvents() {
       e.preventDefault();
       const isPassword = inputEl.type === 'password';
       inputEl.type = isPassword ? 'text' : 'password';
-      toggleBtn.innerHTML = isPassword 
-        ? '<i class="fa-solid fa-eye-slash"></i>' 
+      toggleBtn.innerHTML = isPassword
+        ? '<i class="fa-solid fa-eye-slash"></i>'
         : '<i class="fa-solid fa-eye"></i>';
       toggleBtn.setAttribute('title', isPassword ? 'Hide password' : 'Show password');
       toggleBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
@@ -1826,7 +1826,7 @@ function initEvents() {
   // Ensure pure Arcade Game Theme is active
   try {
     localStorage.removeItem('banana_game_theme');
-  } catch (e) {}
+  } catch (e) { }
   document.body.classList.remove('theme-light');
   document.body.classList.add('theme-arcade');
 
